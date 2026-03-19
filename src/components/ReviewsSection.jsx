@@ -33,12 +33,12 @@ export default function ReviewsSection() {
 
   return (
     <section id="reviews" ref={sectionRef} className="relative pb-24 pt-6 sm:pb-28 sm:pt-10">
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+      <div className="w-full">
         <motion.div
           variants={container}
           initial="hidden"
           animate={entered ? "show" : "hidden"}
-          className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur"
+          className="relative w-full overflow-hidden border-y border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur"
         >
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950/85 via-slate-950/70 to-slate-900/80" />
           <div className="pointer-events-none absolute inset-0 opacity-55 [background-image:radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.10),transparent_45%),radial-gradient(circle_at_80%_15%,rgba(255,255,255,0.06),transparent_48%)]" />
@@ -49,7 +49,7 @@ export default function ReviewsSection() {
             <div className="absolute -bottom-14 right-[-8%] h-48 w-[42rem] rounded-[100%] bg-slate-900/70 blur-[1px]" />
           </div>
 
-          <div className="relative px-6 py-14 sm:px-10 sm:py-16">
+          <div className="relative mx-auto w-full max-w-[1400px] px-6 py-14 sm:px-10 sm:py-16">
             <motion.header variants={flyUp} className="text-center">
               <h2 className="text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
                 Reviews From Users
@@ -65,12 +65,13 @@ export default function ReviewsSection() {
                 variants={flyUp}
                 className="relative mx-auto w-full max-w-[460px]"
               >
-                <div className="pointer-events-none absolute -inset-10 rounded-[2.75rem] bg-gradient-to-tr from-fuchsia-500/20 via-sky-500/10 to-rose-500/15 blur-3xl opacity-70" />
+                
                 <div className="relative h-[520px] w-full overflow-hidden rounded-[2.75rem] sm:h-[600px]">
                   <img
                     src={blackImg}
                     alt=""
-                    className="absolute inset-0 h-full w-full scale-[1.18] object-cover object-bottom drop-shadow-[0_35px_80px_rgba(0,0,0,0.75)]"
+                    className="block w-full h-[520px] sm:h-[600px] object-cover rounded-[2.75rem] overflow-hidden"
+                   
                   />
                 </div>
               </motion.div>

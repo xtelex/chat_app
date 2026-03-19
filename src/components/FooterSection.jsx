@@ -32,17 +32,18 @@ export default function FooterSection() {
     <footer ref={footerRef} className="relative pb-10 pt-14 sm:pb-12 sm:pt-18">
       <div id="faq" className="sr-only" />
 
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+      <div className="w-full">
         <motion.section
           variants={container}
           initial="hidden"
           animate={entered ? "show" : "hidden"}
-          className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-white/5 shadow-[0_35px_110px_rgba(0,0,0,0.65)] backdrop-blur"
+          className="relative w-full overflow-hidden border-y border-white/10 bg-white/5 shadow-[0_35px_110px_rgba(0,0,0,0.65)] backdrop-blur"
         >
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/25" />
           <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(136,19,55,0.55),transparent_68%)] blur-3xl opacity-70" />
           <div className="pointer-events-none absolute -bottom-28 -left-28 h-96 w-96 rounded-full bg-[radial-gradient(circle_at_center,rgba(88,28,135,0.42),transparent_65%)] blur-3xl opacity-60" />
 
+          <div className="relative mx-auto w-full max-w-[1400px]">
           <div className="relative px-6 py-12 sm:px-10 sm:py-14">
             <motion.div
               variants={flyUp}
@@ -180,6 +181,7 @@ export default function FooterSection() {
                 Built for speed, designed for privacy.
               </div>
             </div>
+          </div>
           </div>
         </motion.section>
       </div>

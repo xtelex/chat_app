@@ -86,33 +86,34 @@ export default function IntegrationsSection() {
             keep you connected safely.
           </motion.p>
         </motion.header>
+      </div>
 
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate={entered ? "show" : "hidden"}
+        className="relative mt-12"
+      >
         <motion.div
-          variants={container}
-          initial="hidden"
-          animate={entered ? "show" : "hidden"}
-          className="relative mt-12"
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-16 -z-10 blur-3xl"
         >
-          <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-16 -z-10 blur-3xl"
-          >
-            <div className="absolute left-[8%] top-[18%] h-52 w-80 rounded-full bg-sky-400/10" />
-            <div className="absolute right-[10%] top-[24%] h-56 w-96 rounded-full bg-fuchsia-500/10" />
-            <div className="absolute bottom-[10%] left-1/2 h-56 w-[34rem] -translate-x-1/2 rounded-full bg-red-500/10" />
-          </motion.div>
+          <div className="absolute left-[8%] top-[18%] h-52 w-80 rounded-full bg-sky-400/10" />
+          <div className="absolute right-[10%] top-[24%] h-56 w-96 rounded-full bg-fuchsia-500/10" />
+          <div className="absolute bottom-[10%] left-1/2 h-56 w-[34rem] -translate-x-1/2 rounded-full bg-red-500/10" />
+        </motion.div>
 
-          <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10" />
-            <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),transparent_40%),radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.14),transparent_45%)]" />
+        <div className="relative w-full overflow-hidden border-y border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10" />
+          <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),transparent_40%),radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.14),transparent_45%)]" />
 
-            <div className="relative px-6 py-16 sm:px-10 sm:py-20">
-              <div className="relative mx-auto h-[360px] sm:h-[420px] lg:h-[460px]">
-                <motion.div
-                  variants={flyUp}
-                  className="absolute left-0 top-10 w-[min(340px,52vw)] origin-bottom-left rotate-[-12deg] sm:left-6 sm:top-8 lg:left-12"
-                  style={{ y: phoneLeftY }}
-                >
+          <div className="relative mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 sm:py-20">
+            <div className="relative mx-auto h-[360px] sm:h-[420px] lg:h-[460px]">
+              <motion.div
+                variants={flyUp}
+                className="absolute left-0 top-10 w-[min(340px,52vw)] origin-bottom-left rotate-[-12deg] sm:left-6 sm:top-8 lg:left-12"
+                style={{ y: phoneLeftY }}
+              >
                   <img
                     src={mock1}
                     alt="Chat app preview"
@@ -417,11 +418,10 @@ export default function IntegrationsSection() {
                     </div>
                   </div>
                 </motion.div>
-              </div>
             </div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
     </section>
   );
 }

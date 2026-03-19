@@ -34,17 +34,17 @@ export default function InnerCircleSection() {
 
   return (
     <section id="about" ref={sectionRef} className="relative py-20 sm:py-24">
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+      <div className="w-full">
         <motion.div
           variants={container}
           initial="hidden"
           animate={entered ? "show" : "hidden"}
-          className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur"
+          className="relative w-full overflow-hidden border-y border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur"
         >
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-50/95 via-white/85 to-rose-100/90" />
           <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_18%_20%,rgba(244,63,94,0.18),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(217,70,239,0.12),transparent_48%)]" />
 
-          <div className="relative grid items-center gap-12 px-6 py-14 sm:px-10 sm:py-16 lg:grid-cols-[0.95fr_1.1fr_0.95fr] lg:gap-16">
+          <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-12 px-6 py-14 sm:px-10 sm:py-16 lg:grid-cols-[0.95fr_1.1fr_0.95fr] lg:gap-16">
             <div className="text-center lg:text-left">
               <motion.h2
                 variants={flyUp}

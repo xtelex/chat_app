@@ -36,7 +36,7 @@ function makePopup(text, isMine) {
 
 function FeatureKeycap({ icon, title, body, led = false }) {
   return (
-    <div className="relative w-full max-w-[360px]">
+    <div className="relative h-full w-full min-h-[240px]">
       <div className="pointer-events-none absolute inset-0 translate-y-10 rounded-3xl bg-black/70 blur-2xl" />
 
       {led ? (
@@ -46,8 +46,8 @@ function FeatureKeycap({ icon, title, body, led = false }) {
         </>
       ) : null}
 
-      <div className="relative rounded-3xl bg-gradient-to-b from-zinc-500/95 via-zinc-800/95 to-zinc-950 p-[12px] shadow-[0_28px_75px_rgba(0,0,0,0.75)]">
-        <div className="relative overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-zinc-100 to-zinc-300 px-7 py-6 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-26px_45px_rgba(0,0,0,0.16)]">
+      <div className="relative h-full rounded-3xl bg-gradient-to-b from-zinc-500/95 via-zinc-800/95 to-zinc-950 p-[12px] shadow-[0_28px_75px_rgba(0,0,0,0.75)]">
+        <div className="relative flex h-full flex-col justify-center overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-zinc-100 to-zinc-300 px-7 py-6 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-26px_45px_rgba(0,0,0,0.16)]">
           <div className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay [background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0.55)_0px,rgba(255,255,255,0.55)_1px,rgba(0,0,0,0)_6px,rgba(0,0,0,0)_12px)]" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(255,255,255,0.75),transparent_55%)] opacity-60" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(0,0,0,0.55),transparent_55%)] opacity-25" />
@@ -90,9 +90,6 @@ export default function HowItWorksSection() {
 
   const phoneY = useTransform(scrollYProgress, [0, 1], [24, -18]);
   const bgBlurY = useTransform(scrollYProgress, [0, 1], [10, -20]);
-  const keycapY1 = useTransform(scrollYProgress, [0, 1], [10, -12]);
-  const keycapY2 = useTransform(scrollYProgress, [0, 1], [18, -16]);
-  const keycapY3 = useTransform(scrollYProgress, [0, 1], [14, -14]);
 
   const nextIndexRef = useRef(0);
   const nextSideRef = useRef(false);
@@ -184,124 +181,128 @@ export default function HowItWorksSection() {
 
   return (
     <section id="features" ref={sectionRef} className="pb-24 pt-10 sm:pb-28 sm:pt-16">
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
-        <header className="text-center">
-          <h2 className="text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            Seamless Team Communication
-          </h2>
-        </header>
+      <div className="w-full">
+        <div className="relative w-full overflow-hidden border-y border-white/10 bg-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.65)] backdrop-blur">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-50/95 via-white/85 to-rose-100/90" />
+          <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_18%_20%,rgba(244,63,94,0.18),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(217,70,239,0.12),transparent_48%)]" />
 
-        <div className="relative mt-12 grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
-          <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-20 -z-10 blur-3xl"
-            style={{ y: bgBlurY }}
-          >
-            <div className="absolute left-[6%] top-[18%] h-48 w-72 rounded-full bg-fuchsia-500/10" />
-            <div className="absolute right-[8%] top-[34%] h-56 w-80 rounded-full bg-red-500/10" />
-          </motion.div>
+          <div className="relative mx-auto w-full max-w-[1400px] px-6 py-14 sm:px-10 sm:py-16">
+            <header className="text-center">
+              <h2 className="text-balance text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+                Seamless Team Communication
+              </h2>
+            </header>
 
-          <motion.div
-            variants={flyUp}
-            initial="hidden"
-            animate={entered ? "show" : "hidden"}
-            className="relative mx-auto w-full max-w-[520px] p-10 sm:max-w-[560px] sm:p-12"
-          >
-            <div className="pointer-events-none absolute -inset-16 rounded-[3rem] bg-gradient-to-tr from-red-500/25 via-fuchsia-500/15 to-pink-500/20 blur-3xl opacity-80" />
+            <div className="relative mt-12 grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-14">
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-20 -z-10 blur-3xl"
+                style={{ y: bgBlurY }}
+              >
+                <div className="absolute left-[6%] top-[18%] h-48 w-72 rounded-full bg-fuchsia-500/10" />
+                <div className="absolute right-[8%] top-[34%] h-56 w-80 rounded-full bg-red-500/10" />
+              </motion.div>
 
-            <div className="relative mx-auto w-full max-w-[420px]">
-              <motion.img
-                src={phoneImg}
-                alt="Phone preview"
-                className="relative w-full origin-bottom-left drop-shadow-[0_35px_75px_rgba(0,0,0,0.75)]"
-                initial={false}
-                animate={{ rotate: -10 }}
-                transition={{ type: "spring", stiffness: 60, damping: 18 }}
-                style={{ y: phoneY }}
-              />
+              <motion.div
+                variants={flyUp}
+                initial="hidden"
+                animate={entered ? "show" : "hidden"}
+                className="relative mx-auto w-full max-w-[580px] p-10 sm:max-w-[620px] sm:p-12 lg:mx-0 lg:justify-self-start"
+              >
+                <div className="pointer-events-none absolute -inset-16 rounded-[3rem] bg-gradient-to-tr from-red-500/25 via-fuchsia-500/15 to-pink-500/20 blur-3xl opacity-80" />
 
-              <div className="pointer-events-none absolute inset-0">
-                <AnimatePresence initial={false}>
-                  {popups.map((m) => (
-                    <motion.div
-                      key={m.id}
-                      initial={{ opacity: 0, y: 10, scale: 0.92 }}
-                      animate={{
-                        opacity: [0, 1, 1, 0],
-                        y: [10, 0, -10, -22],
-                        scale: [0.92, 1, 1, 0.98]
-                      }}
-                      exit={{ opacity: 0, y: -26, scale: 0.98 }}
-                      transition={{
-                        duration: 2.7,
-                        times: [0, 0.14, 0.78, 1],
-                        ease: EASE
-                      }}
-                      style={{ left: `${m.left}%`, top: `${m.top}%` }}
-                      className="absolute z-10"
-                    >
-                      <div
-                        className={[
-                          "max-w-[260px] rounded-2xl px-5 py-3.5 text-sm leading-5 shadow-[0_24px_90px_rgba(0,0,0,0.75)] backdrop-blur-2xl ring-1 ring-white/15",
-                          m.isMine
-                            ? "border border-fuchsia-200/25 bg-gradient-to-r from-fuchsia-500/65 to-pink-500/65 text-white"
-                            : "border border-white/20 bg-slate-950/55 text-white/95"
-                        ].join(" ")}
-                      >
-                        {m.text}
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+                <div className="relative mx-auto w-full max-w-[480px]">
+                  <motion.img
+                    src={phoneImg}
+                    alt="Phone preview"
+                    className="relative z-10 w-full origin-bottom-left drop-shadow-[0_35px_75px_rgba(0,0,0,0.75)]"
+                    initial={false}
+                    animate={{ rotate: -10 }}
+                    transition={{ type: "spring", stiffness: 60, damping: 18 }}
+                    style={{ y: phoneY }}
+                  />
+
+                  <div className="pointer-events-none absolute inset-0">
+                    <AnimatePresence initial={false}>
+                      {popups.map((m) => (
+                        <motion.div
+                          key={m.id}
+                          initial={{ opacity: 0, y: 10, scale: 0.92 }}
+                          animate={{
+                            opacity: [0, 1, 1, 0],
+                            y: [10, 0, -10, -22],
+                            scale: [0.92, 1, 1, 0.98]
+                          }}
+                          exit={{ opacity: 0, y: -26, scale: 0.98 }}
+                          transition={{
+                            duration: 2.7,
+                            times: [0, 0.14, 0.78, 1],
+                            ease: EASE
+                          }}
+                          style={{ left: `${m.left}%`, top: `${m.top}%` }}
+                          className="absolute z-10"
+                        >
+                          <div
+                            className={[
+                              "max-w-[260px] rounded-2xl px-5 py-3.5 text-sm leading-5 shadow-[0_24px_90px_rgba(0,0,0,0.75)] backdrop-blur-2xl ring-1 ring-white/15",
+                              m.isMine
+                                ? "border border-fuchsia-200/25 bg-gradient-to-r from-fuchsia-500/65 to-pink-500/65 text-white"
+                                : "border border-white/20 bg-slate-950/55 text-white/95"
+                            ].join(" ")}
+                          >
+                            {m.text}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                variants={keycapsContainer}
+                initial="hidden"
+                animate={entered ? "show" : "hidden"}
+                className="w-full lg:justify-self-end"
+              >
+                <div className="grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-1">
+                  <motion.div
+                    variants={keycapItem}
+                    className="flex h-full"
+                  >
+                    <FeatureKeycap
+                      icon={features[1].icon}
+                      title={features[1].title}
+                      body={features[1].body}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    variants={keycapItem}
+                    className="flex h-full"
+                  >
+                    <FeatureKeycap
+                      icon={features[0].icon}
+                      title={features[0].title}
+                      body={features[0].body}
+                      led
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    variants={keycapItem}
+                    className="flex h-full sm:col-span-2 lg:col-span-1"
+                  >
+                    <FeatureKeycap
+                      icon={features[2].icon}
+                      title={features[2].title}
+                      body={features[2].body}
+                    />
+                  </motion.div>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
-
-          <motion.div
-            variants={keycapsContainer}
-            initial="hidden"
-            animate={entered ? "show" : "hidden"}
-            className="relative mx-auto w-full max-w-[820px]"
-          >
-            <div className="grid gap-6 sm:grid-cols-2 lg:block lg:h-[520px]">
-              <motion.div
-                variants={keycapItem}
-                className="lg:absolute lg:right-0 lg:top-2 lg:rotate-6"
-                style={{ y: keycapY1 }}
-              >
-                <FeatureKeycap
-                  icon={features[1].icon}
-                  title={features[1].title}
-                  body={features[1].body}
-                />
-              </motion.div>
-
-              <motion.div
-                variants={keycapItem}
-                className="lg:absolute lg:left-0 lg:top-[170px] lg:-rotate-6"
-                style={{ y: keycapY2 }}
-              >
-                <FeatureKeycap
-                  icon={features[0].icon}
-                  title={features[0].title}
-                  body={features[0].body}
-                  led
-                />
-              </motion.div>
-
-              <motion.div
-                variants={keycapItem}
-                className="sm:col-span-2 lg:absolute lg:right-10 lg:top-[340px] lg:-rotate-4"
-                style={{ y: keycapY3 }}
-              >
-                <FeatureKeycap
-                  icon={features[2].icon}
-                  title={features[2].title}
-                  body={features[2].body}
-                />
-              </motion.div>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
