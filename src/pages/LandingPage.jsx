@@ -19,7 +19,8 @@ import {
   Instagram,
   Mail,
   Play,
-  Twitter
+  Twitter,
+  UserCircle
 } from "lucide-react";
 
 const navLinks = ["Home", "Features", "About", "Contact"];
@@ -113,14 +114,25 @@ export default function LandingPage() {
             ))}
           </nav>
 
-          <motion.button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-base font-semibold text-white/90 shadow-sm backdrop-blur transition hover:bg-white/10"
-          >
-            Get App
-            <Apple className="h-4 w-4" />
-            <Play className="h-4 w-4" />
-          </motion.button>
+          <div className="flex items-center gap-3">
+            <motion.button
+              type="button"
+              onClick={() => navigate("/account")}
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-base font-semibold text-white/90 shadow-sm backdrop-blur transition hover:bg-white/10"
+            >
+              Account
+              <UserCircle className="h-4 w-4" />
+            </motion.button>
+
+            <motion.button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-base font-semibold text-white/90 shadow-sm backdrop-blur transition hover:bg-white/10"
+            >
+              Get App
+              <Apple className="h-4 w-4" />
+              <Play className="h-4 w-4" />
+            </motion.button>
+          </div>
         </div>
       </div>
 

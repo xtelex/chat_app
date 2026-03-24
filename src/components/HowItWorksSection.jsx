@@ -1,105 +1,31 @@
 import {
-  AnimatePresence,
   motion,
   useInView,
   useScroll,
   useTransform
 } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import chatIcon from "../assets/chat.png";
 import videoIcon from "../assets/video.png";
 import callIcon from "../assets/call.png";
-import phoneImg from "../assets/phone.png";
-
-const messagePool = [
-  "pisteng yawa",
-  "Hi pogii!!",
-  "kamukha mo po si Joshua Garcia",
-  "Crush ka daw po ng lola ko"
-];
+import mockrocketVideo from "../assets/mockrocket-export.mp4";
 
 const EASE = [0.22, 1, 0.36, 1];
 
-function makePopup(text, isMine) {
-  const left = isMine ? 58 + Math.random() * 34 : 8 + Math.random() * 34;
-  const top = 16 + Math.random() * 66;
-
-  return {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    text,
-    isMine,
-    left,
-    top
-  };
-}
-
-function FeatureKeycap({ icon, title, body, led = false }) {
-  return (
-    <div className="relative h-full w-full min-h-[240px]">
-      <div className="pointer-events-none absolute inset-0 translate-y-10 rounded-3xl bg-black/70 blur-2xl" />
-
-      {led ? (
-        <>
-          <div className="pointer-events-none absolute -bottom-10 left-1/2 h-20 w-20 -translate-x-1/2 rounded-full bg-red-500/40 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-6 left-1/2 h-10 w-10 -translate-x-1/2 rounded-full bg-red-500/60 blur-xl" />
-        </>
-      ) : null}
-
-      <div className="relative h-full rounded-3xl bg-gradient-to-b from-zinc-500/95 via-zinc-800/95 to-zinc-950 p-[12px] shadow-[0_28px_75px_rgba(0,0,0,0.75)]">
-        <div className="relative flex h-full flex-col justify-center overflow-hidden rounded-[1.35rem] bg-gradient-to-b from-zinc-100 to-zinc-300 px-7 py-6 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-26px_45px_rgba(0,0,0,0.16)]">
-          <div className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay [background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0.55)_0px,rgba(255,255,255,0.55)_1px,rgba(0,0,0,0)_6px,rgba(0,0,0,0)_12px)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(255,255,255,0.75),transparent_55%)] opacity-60" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(0,0,0,0.55),transparent_55%)] opacity-25" />
-
-          <div className="relative">
-            <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-18px_30px_rgba(0,0,0,0.22)] ring-1 ring-black/10">
-              <img
-                alt=""
-                src={icon}
-                className="h-7 w-7 object-contain saturate-150 drop-shadow-[0_6px_10px_rgba(0,0,0,0.35)]"
-              />
-            </div>
-
-            <h3 className="mt-4 text-center text-base font-semibold [text-shadow:0_1px_0_rgba(255,255,255,0.45)]">
-              {title}
-            </h3>
-            <p className="mt-2 text-center text-sm leading-6 text-slate-700 [text-shadow:0_1px_0_rgba(255,255,255,0.35)]">
-              {body}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {led ? (
-        <div className="pointer-events-none absolute -bottom-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.85),0_0_22px_rgba(239,68,68,0.55)] ring-1 ring-red-200/40" />
-      ) : null}
-    </div>
-  );
-}
-
 export default function HowItWorksSection() {
   const sectionRef = useRef(null);
-  const inView = useInView(sectionRef, { margin: "-25% 0px -25% 0px" });
   const entered = useInView(sectionRef, { margin: "-20% 0px -40% 0px" });
+  const videoRef = useRef(null);
+  const videoStartedRef = useRef(false);
+  const videoEndedRef = useRef(false);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"]
   });
 
-  const phoneY = useTransform(scrollYProgress, [0, 1], [24, -18]);
   const bgBlurY = useTransform(scrollYProgress, [0, 1], [10, -20]);
-
-  const nextIndexRef = useRef(0);
-  const nextSideRef = useRef(false);
-  const timeoutsRef = useRef([]);
-
-  const [popups, setPopups] = useState(() => [
-    makePopup(messagePool[1], true),
-    makePopup(messagePool[0], false),
-    makePopup(messagePool[3], false)
-  ]);
 
   const features = useMemo(
     () => [
@@ -122,7 +48,7 @@ export default function HowItWorksSection() {
     []
   );
 
-  const keycapsContainer = {
+  const featuresContainer = {
     hidden: {},
     show: {
       transition: {
@@ -131,7 +57,7 @@ export default function HowItWorksSection() {
     }
   };
 
-  const keycapItem = {
+  const featureItem = {
     hidden: { opacity: 0, scale: 0.8, y: 34 },
     show: {
       opacity: 1,
@@ -156,28 +82,53 @@ export default function HowItWorksSection() {
   };
 
   useEffect(() => {
-    if (!inView) return;
+    const el = videoRef.current;
+    if (!el) return;
 
-    const interval = setInterval(() => {
-      const idx = nextIndexRef.current % messagePool.length;
-      nextIndexRef.current += 1;
+    if (!entered) {
+      el.pause();
+      videoStartedRef.current = false;
+      videoEndedRef.current = false;
+      try {
+        el.currentTime = 0;
+      } catch {}
+    }
+  }, [entered]);
 
-      const isMine = (nextSideRef.current = !nextSideRef.current);
-      const msg = makePopup(messagePool[idx], isMine);
-      setPopups((prev) => [...prev, msg].slice(-5));
+  useEffect(() => {
+    if (!entered) return;
 
-      const timeoutId = window.setTimeout(() => {
-        setPopups((prev) => prev.filter((x) => x.id !== msg.id));
-      }, 2800);
-      timeoutsRef.current.push(timeoutId);
-    }, 1100);
+    let rafId = 0;
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        if (videoEndedRef.current) return;
 
-    return () => {
-      clearInterval(interval);
-      for (const id of timeoutsRef.current) window.clearTimeout(id);
-      timeoutsRef.current = [];
+        const el = videoRef.current;
+        if (!el) return;
+
+        if (!videoStartedRef.current) {
+          videoStartedRef.current = true;
+          try {
+            el.currentTime = 0;
+          } catch {}
+        }
+        const p = el.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      });
     };
-  }, [inView]);
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onScroll, { passive: true });
+    window.addEventListener("touchmove", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onScroll);
+      window.removeEventListener("touchmove", onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [entered]);
 
   return (
     <section id="features" ref={sectionRef} className="pb-24 pt-10 sm:pb-28 sm:pt-16">
@@ -193,7 +144,7 @@ export default function HowItWorksSection() {
               </h2>
             </header>
 
-            <div className="relative mt-12 grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-14">
+            <div className="relative mt-12 grid items-center gap-12 lg:grid-cols-[1.35fr_0.65fr] lg:items-center lg:gap-14">
               <motion.div
                 aria-hidden="true"
                 className="pointer-events-none absolute -inset-20 -z-10 blur-3xl"
@@ -207,98 +158,58 @@ export default function HowItWorksSection() {
                 variants={flyUp}
                 initial="hidden"
                 animate={entered ? "show" : "hidden"}
-                className="relative mx-auto w-full max-w-[580px] p-10 sm:max-w-[620px] sm:p-12 lg:mx-0 lg:justify-self-start"
+                className="relative mx-auto w-full max-w-none sm:max-w-[920px] lg:mx-0 lg:-ml-6 lg:justify-self-start"
               >
                 <div className="pointer-events-none absolute -inset-16 rounded-[3rem] bg-gradient-to-tr from-red-500/25 via-fuchsia-500/15 to-pink-500/20 blur-3xl opacity-80" />
 
-                <div className="relative mx-auto w-full max-w-[480px]">
-                  <motion.img
-                    src={phoneImg}
-                    alt="Phone preview"
-                    className="relative z-10 w-full origin-bottom-left drop-shadow-[0_35px_75px_rgba(0,0,0,0.75)]"
-                    initial={false}
-                    animate={{ rotate: -10 }}
-                    transition={{ type: "spring", stiffness: 60, damping: 18 }}
-                    style={{ y: phoneY }}
+                <div className="relative h-[240px] w-full overflow-hidden rounded-3xl bg-black/10 shadow-[0_35px_75px_rgba(0,0,0,0.35)] ring-1 ring-black/10 backdrop-blur sm:h-[360px] lg:h-[min(520px,60vh)]">
+                  <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_25%_10%,rgba(255,255,255,0.55),transparent_55%),radial-gradient(circle_at_80%_90%,rgba(244,63,94,0.25),transparent_55%)]" />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-24 bg-gradient-to-l from-rose-50/80 via-rose-50/25 to-transparent backdrop-blur-2xl sm:w-28" />
+                  <video
+                    className="relative z-10 h-full w-full object-cover"
+                    src={mockrocketVideo}
+                    muted
+                    playsInline
+                    disablePictureInPicture
+                    controlsList="nodownload noremoteplayback noplaybackrate"
+                    preload="metadata"
+                    ref={videoRef}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onEnded={() => {
+                      videoEndedRef.current = true;
+                    }}
                   />
-
-                  <div className="pointer-events-none absolute inset-0">
-                    <AnimatePresence initial={false}>
-                      {popups.map((m) => (
-                        <motion.div
-                          key={m.id}
-                          initial={{ opacity: 0, y: 10, scale: 0.92 }}
-                          animate={{
-                            opacity: [0, 1, 1, 0],
-                            y: [10, 0, -10, -22],
-                            scale: [0.92, 1, 1, 0.98]
-                          }}
-                          exit={{ opacity: 0, y: -26, scale: 0.98 }}
-                          transition={{
-                            duration: 2.7,
-                            times: [0, 0.14, 0.78, 1],
-                            ease: EASE
-                          }}
-                          style={{ left: `${m.left}%`, top: `${m.top}%` }}
-                          className="absolute z-10"
-                        >
-                          <div
-                            className={[
-                              "max-w-[260px] rounded-2xl px-5 py-3.5 text-sm leading-5 shadow-[0_24px_90px_rgba(0,0,0,0.75)] backdrop-blur-2xl ring-1 ring-white/15",
-                              m.isMine
-                                ? "border border-fuchsia-200/25 bg-gradient-to-r from-fuchsia-500/65 to-pink-500/65 text-white"
-                                : "border border-white/20 bg-slate-950/55 text-white/95"
-                            ].join(" ")}
-                          >
-                            {m.text}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
                 </div>
               </motion.div>
 
               <motion.div
-                variants={keycapsContainer}
+                variants={featuresContainer}
                 initial="hidden"
                 animate={entered ? "show" : "hidden"}
-                className="w-full lg:justify-self-end"
+                className="w-full lg:justify-self-end lg:self-center"
               >
-                <div className="grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-1">
-                  <motion.div
-                    variants={keycapItem}
-                    className="flex h-full"
-                  >
-                    <FeatureKeycap
-                      icon={features[1].icon}
-                      title={features[1].title}
-                      body={features[1].body}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    variants={keycapItem}
-                    className="flex h-full"
-                  >
-                    <FeatureKeycap
-                      icon={features[0].icon}
-                      title={features[0].title}
-                      body={features[0].body}
-                      led
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    variants={keycapItem}
-                    className="flex h-full sm:col-span-2 lg:col-span-1"
-                  >
-                    <FeatureKeycap
-                      icon={features[2].icon}
-                      title={features[2].title}
-                      body={features[2].body}
-                    />
-                  </motion.div>
+                <div className="space-y-10">
+                  {features.map((feature) => (
+                    <motion.div key={feature.title} variants={featureItem}>
+                      <div className="flex items-start gap-4">
+                        <div className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-black/10 ring-1 ring-black/10 backdrop-blur">
+                          <img
+                            alt=""
+                            src={feature.icon}
+                            className="h-6 w-6 object-contain saturate-150 drop-shadow-[0_6px_10px_rgba(0,0,0,0.25)]"
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">
+                            {feature.title}
+                          </h3>
+                          <p className="mt-2 text-base leading-7 text-slate-700">
+                            {feature.body}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             </div>

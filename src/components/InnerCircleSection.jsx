@@ -127,7 +127,7 @@ export default function InnerCircleSection() {
                   <img
                     src={threePips}
                     alt="Friends chatting together"
-                    className="absolute inset-0 h-full w-full origin-center scale-[1.18] translate-y-[22%] object-cover object-center drop-shadow-[0_30px_70px_rgba(0,0,0,0.25)]"
+                    className="absolute inset-0 h-full w-full origin-center scale-[1.18] translate-y-[30%] object-cover object-center drop-shadow-[0_30px_70px_rgba(0,0,0,0.25)]"
                   />
                 </div>
               </div>

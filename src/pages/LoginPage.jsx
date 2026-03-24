@@ -1,11 +1,13 @@
 import { motion } from "motion/react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
+  KeyRound,
   Lock,
   Mail,
+  Phone,
   ShieldCheck,
-  Sparkles,
   Users,
   Video
 } from "lucide-react";
@@ -13,10 +15,165 @@ import {
 import bg1 from "../assets/bg1.jpg";
 import appIcon from "../assets/icon.png";
 import blackImg from "../assets/black.png";
+import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
 
 const EASE = [0.22, 1, 0.36, 1];
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
+  const [authMode, setAuthMode] = useState("signin"); // signin | signup
+  const [method, setMethod] = useState("email"); // email | phone
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState(null);
+
+  const title = authMode === "signin" ? "Welcome back" : "Create your account";
+  const subtitle = useMemo(() => {
+    if (authMode === "signin") {
+      return "Sign in to pick up where you left off—your chats stay private, fast, and synced across devices.";
+    }
+    return "Create an account to start chatting. You can use email + password, phone OTP, or Google.";
+  }, [authMode]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    if (!supabase) return;
+
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (data.session) navigate("/");
+    });
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate("/");
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [isSupabaseConfigured, navigate]);
+
+  const resetNotices = () => setNotice(null);
+
+  const ensureConfigured = () => {
+    if (isSupabaseConfigured) return true;
+    setNotice({
+      type: "error",
+      message:
+        "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) in client/.env."
+    });
+    return false;
+  };
+
+  const handleGoogle = async () => {
+    resetNotices();
+    if (!ensureConfigured()) return;
+    if (!supabase) return;
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) setNotice({ type: "error", message: error.message });
+    setLoading(false);
+  };
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    resetNotices();
+    if (!ensureConfigured()) return;
+    if (!supabase) return;
+
+    if (!email || !password) {
+      setNotice({ type: "error", message: "Please enter email and password." });
+      return;
+    }
+
+    setLoading(true);
+    if (authMode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (error) setNotice({ type: "error", message: error.message });
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setNotice({ type: "error", message: error.message });
+      setLoading(false);
+      return;
+    }
+
+    if (!data.session) {
+      setNotice({
+        type: "success",
+        message: "Check your email to confirm your account, then sign in."
+      });
+    }
+    setLoading(false);
+  };
+
+  const handlePhoneAuth = async (e) => {
+    e.preventDefault();
+    resetNotices();
+    if (!ensureConfigured()) return;
+    if (!supabase) return;
+
+    if (!phone) {
+      setNotice({
+        type: "error",
+        message: "Enter your phone number (example: +63XXXXXXXXXX)."
+      });
+      return;
+    }
+
+    setLoading(true);
+    if (!otpSent) {
+      const { error } = await supabase.auth.signInWithOtp({ phone });
+      if (error) {
+        setNotice({ type: "error", message: error.message });
+        setLoading(false);
+        return;
+      }
+      setOtpSent(true);
+      setNotice({
+        type: "success",
+        message: "We sent you a code. Enter it to continue."
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!otp) {
+      setNotice({ type: "error", message: "Enter the SMS code." });
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.verifyOtp({
+      phone,
+      token: otp,
+      type: "sms"
+    });
+    if (error) setNotice({ type: "error", message: error.message });
+    setLoading(false);
+  };
+
   return (
     <div className="relative isolate min-h-[100dvh] overflow-x-hidden">
       <div className="pointer-events-none fixed inset-0 -z-10">
@@ -62,20 +219,43 @@ export default function LoginPage() {
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20" />
             <div className="relative px-7 py-10 sm:px-10 sm:py-12">
               <h1 className="text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Welcome back
+                {title}
               </h1>
               <p className="mt-3 max-w-md text-pretty text-sm leading-6 text-white/65 sm:text-base">
-                Sign in to pick up where you left off—your chats stay private,
-                fast, and synced across devices.
+                {subtitle}
               </p>
 
               <div className="mt-8">
                 <button
                   type="button"
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-semibold text-white shadow-sm backdrop-blur transition hover:bg-white/15"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-semibold text-white shadow-sm backdrop-blur transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-70"
+                  onClick={handleGoogle}
+                  disabled={loading}
                 >
                   <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/10 ring-1 ring-white/10">
-                    <Sparkles className="h-4 w-4 text-white/85" aria-hidden="true" />
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 48 48"
+                      className="h-4 w-4"
+                      focusable="false"
+                    >
+                      <path
+                        fill="#FFC107"
+                        d="M43.611 20.083H42V20H24v8h11.303C33.655 32.653 29.151 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C34.047 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+                      />
+                      <path
+                        fill="#FF3D00"
+                        d="M6.306 14.691l6.571 4.819C14.655 16.108 19.001 12 24 12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C34.047 6.053 29.268 4 24 4c-7.682 0-14.381 4.332-17.694 10.691z"
+                      />
+                      <path
+                        fill="#4CAF50"
+                        d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.132 0-9.621-3.327-11.283-7.946l-6.52 5.025C9.473 39.556 16.227 44 24 44z"
+                      />
+                      <path
+                        fill="#1976D2"
+                        d="M43.611 20.083H42V20H24v8h11.303a12.03 12.03 0 0 1-4.087 5.565l6.19 5.238C40.913 36.187 44 30.659 44 24c0-1.341-.138-2.65-.389-3.917z"
+                      />
+                    </svg>
                   </span>
                   Continue with Google
                 </button>
@@ -86,57 +266,181 @@ export default function LoginPage() {
                   <div className="h-px flex-1 bg-white/10" />
                 </div>
 
-                <form className="space-y-5">
-                  <label className="block">
-                    <span className="text-xs font-semibold text-white/70">
-                      Email or phone
-                    </span>
-                    <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                      <Mail className="h-4 w-4 text-white/55" aria-hidden="true" />
-                      <input
-                        className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
-                        placeholder="you@example.com"
-                        autoComplete="email"
-                      />
-                    </div>
-                  </label>
-
-                  <label className="block">
-                    <span className="text-xs font-semibold text-white/70">
-                      Password
-                    </span>
-                    <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                      <Lock className="h-4 w-4 text-white/55" aria-hidden="true" />
-                      <input
-                        type="password"
-                        className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
-                        placeholder="••••••••"
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        className="text-xs font-semibold text-white/55 transition hover:text-white/80"
-                      >
-                        Forgot?
-                      </button>
-                    </div>
-                  </label>
-
+                <div className="flex w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold text-white/75 shadow-sm backdrop-blur">
                   <button
                     type="button"
-                    className="w-full rounded-2xl bg-pink-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-pink-500/25 transition hover:bg-pink-400"
+                    onClick={() => {
+                      resetNotices();
+                      setMethod("email");
+                      setOtpSent(false);
+                      setOtp("");
+                    }}
+                    className={[
+                      "flex-1 px-4 py-2.5 transition",
+                      method === "email"
+                        ? "bg-white/10 text-white"
+                        : "hover:bg-white/10"
+                    ].join(" ")}
                   >
-                    Sign in
+                    Email
                   </button>
-                </form>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetNotices();
+                      setMethod("phone");
+                      setOtpSent(false);
+                      setOtp("");
+                    }}
+                    className={[
+                      "flex-1 px-4 py-2.5 transition",
+                      method === "phone"
+                        ? "bg-white/10 text-white"
+                        : "hover:bg-white/10"
+                    ].join(" ")}
+                  >
+                    Phone
+                  </button>
+                </div>
+
+                {notice ? (
+                  <div
+                    className={[
+                      "mt-5 rounded-2xl border px-4 py-3 text-sm backdrop-blur",
+                      notice.type === "error"
+                        ? "border-red-500/25 bg-red-500/10 text-red-100"
+                        : "border-emerald-500/25 bg-emerald-500/10 text-emerald-50"
+                    ].join(" ")}
+                  >
+                    {notice.message}
+                  </div>
+                ) : null}
+
+                {method === "email" ? (
+                  <form className="mt-6 space-y-5" onSubmit={handleEmailAuth}>
+                    <label className="block">
+                      <span className="text-xs font-semibold text-white/70">
+                        Email
+                      </span>
+                      <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+                        <Mail className="h-4 w-4 text-white/55" aria-hidden="true" />
+                        <input
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                        />
+                      </div>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-semibold text-white/70">
+                        Password
+                      </span>
+                      <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+                        <Lock className="h-4 w-4 text-white/55" aria-hidden="true" />
+                        <input
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          type="password"
+                          className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
+                          placeholder="••••••••"
+                          autoComplete={
+                            authMode === "signin"
+                              ? "current-password"
+                              : "new-password"
+                          }
+                        />
+                      </div>
+                    </label>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full rounded-2xl bg-pink-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-pink-500/25 transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {loading
+                        ? "Please wait…"
+                        : authMode === "signin"
+                        ? "Sign in"
+                        : "Create account"}
+                    </button>
+                  </form>
+                ) : (
+                  <form className="mt-6 space-y-5" onSubmit={handlePhoneAuth}>
+                    <label className="block">
+                      <span className="text-xs font-semibold text-white/70">
+                        Phone number
+                      </span>
+                      <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+                        <Phone className="h-4 w-4 text-white/55" aria-hidden="true" />
+                        <input
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
+                          placeholder="+63XXXXXXXXXX"
+                          autoComplete="tel"
+                          inputMode="tel"
+                        />
+                      </div>
+                    </label>
+
+                    {otpSent ? (
+                      <label className="block">
+                        <span className="text-xs font-semibold text-white/70">
+                          SMS code
+                        </span>
+                        <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+                          <KeyRound className="h-4 w-4 text-white/55" aria-hidden="true" />
+                          <input
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
+                            placeholder="123456"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              resetNotices();
+                              setOtpSent(false);
+                              setOtp("");
+                            }}
+                            className="text-xs font-semibold text-white/55 transition hover:text-white/80"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      </label>
+                    ) : null}
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full rounded-2xl bg-pink-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-pink-500/25 transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {loading ? "Please wait…" : otpSent ? "Verify code" : "Send code"}
+                    </button>
+                  </form>
+                )}
 
                 <p className="mt-6 text-center text-xs text-white/55">
-                  No account yet?{" "}
+                  {authMode === "signin"
+                    ? "No account yet? "
+                    : "Already have an account? "}
                   <button
                     type="button"
                     className="font-semibold text-white/75 underline-offset-2 hover:underline"
+                    onClick={() => {
+                      resetNotices();
+                      setAuthMode((m) => (m === "signin" ? "signup" : "signin"));
+                      setOtpSent(false);
+                      setOtp("");
+                    }}
                   >
-                    Create one
+                    {authMode === "signin" ? "Create one" : "Sign in"}
                   </button>
                 </p>
               </div>
@@ -186,9 +490,9 @@ export default function LoginPage() {
                     Icon: Video,
                     className: "left-[6%] bottom-[14%]"
                   }
-                ].map(({ title, value, Icon, className }) => (
+                ].map(({ title: cardTitle, value, Icon, className }) => (
                   <div
-                    key={title}
+                    key={cardTitle}
                     className={[
                       "absolute hidden w-[min(16.5rem,44%)] overflow-hidden rounded-3xl border border-white/10 bg-white/10 p-4 shadow-lg backdrop-blur-lg sm:block",
                       className
@@ -199,7 +503,7 @@ export default function LoginPage() {
                         <Icon className="h-5 w-5 text-white/85" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-white/70">{title}</p>
+                        <p className="text-xs font-semibold text-white/70">{cardTitle}</p>
                         <p className="mt-1 text-sm font-semibold text-white">{value}</p>
                       </div>
                     </div>
