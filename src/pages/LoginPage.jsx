@@ -33,6 +33,20 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [supabaseHealth, setSupabaseHealth] = useState({ status: "idle", message: "" });
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  const supabaseHost = useMemo(() => {
+    if (!supabaseUrl) return "";
+    try {
+      return new URL(supabaseUrl).host;
+    } catch {
+      return supabaseUrl;
+    }
+  }, [supabaseUrl]);
 
   const title = authMode === "signin" ? "Welcome back" : "Create your account";
   const subtitle = useMemo(() => {
@@ -49,13 +63,13 @@ export default function LoginPage() {
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
-      if (data.session) navigate("/");
+      if (data.session) navigate("/chat");
     });
 
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/");
+      if (session) navigate("/chat");
     });
 
     return () => {
@@ -64,7 +78,58 @@ export default function LoginPage() {
     };
   }, [isSupabaseConfigured, navigate]);
 
+  useEffect(() => {
+    if (!supabaseUrl || !supabaseKey) return;
+
+    const controller = new AbortController();
+    setSupabaseHealth({ status: "checking", message: "Checking Supabase connectivity…" });
+
+    fetch(`${supabaseUrl}/auth/v1/health`, {
+      headers: { apikey: supabaseKey },
+      signal: controller.signal
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          setSupabaseHealth({ status: "ok", message: "Supabase reachable" });
+          return;
+        }
+
+        const text = await res.text().catch(() => "");
+        setSupabaseHealth({
+          status: "error",
+          message: `Supabase error (status ${res.status})${text ? `: ${text}` : ""}`
+        });
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        setSupabaseHealth({
+          status: "error",
+          message: err?.message || "Could not reach Supabase"
+        });
+      });
+
+    return () => controller.abort();
+  }, [supabaseKey, supabaseUrl]);
+
   const resetNotices = () => setNotice(null);
+
+  const formatAuthError = (err) => {
+    if (!err) return null;
+    const parts = [];
+    if (err.message) parts.push(String(err.message));
+    if (err.status) parts.push(`(status ${err.status})`);
+    if (err.code) parts.push(`[${err.code}]`);
+    return parts.join(" ");
+  };
+
+  const setThrownError = (err, fallback) => {
+    const message =
+      err?.message ||
+      (typeof err === "string" ? err : null) ||
+      fallback ||
+      "Something went wrong. Please try again.";
+    setNotice({ type: "error", message });
+  };
 
   const ensureConfigured = () => {
     if (isSupabaseConfigured) return true;
@@ -82,12 +147,17 @@ export default function LoginPage() {
     if (!supabase) return;
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin }
-    });
-    if (error) setNotice({ type: "error", message: error.message });
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) setNotice({ type: "error", message: formatAuthError(error) });
+    } catch (err) {
+      setThrownError(err, "Google sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEmailAuth = async (e) => {
@@ -102,30 +172,42 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    if (authMode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      if (error) setNotice({ type: "error", message: error.message });
-      setLoading(false);
-      return;
-    }
+    try {
+      if (authMode === "signin") {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) {
+          setNotice({ type: "error", message: formatAuthError(error) });
+          return;
+        }
+        if (data?.session) navigate("/chat");
+        return;
+      }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setNotice({ type: "error", message: error.message });
-      setLoading(false);
-      return;
-    }
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setNotice({ type: "error", message: formatAuthError(error) });
+        return;
+      }
 
-    if (!data.session) {
-      setNotice({
-        type: "success",
-        message: "Check your email to confirm your account, then sign in."
-      });
+      if (data?.session) {
+        navigate("/chat");
+        return;
+      }
+
+      if (!data.session) {
+        setNotice({
+          type: "success",
+          message: "Check your email to confirm your account, then sign in."
+        });
+      }
+    } catch (err) {
+      setThrownError(err, "Email authentication failed.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handlePhoneAuth = async (e) => {
@@ -143,35 +225,42 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    if (!otpSent) {
-      const { error } = await supabase.auth.signInWithOtp({ phone });
-      if (error) {
-        setNotice({ type: "error", message: error.message });
-        setLoading(false);
+    try {
+      if (!otpSent) {
+        const { error } = await supabase.auth.signInWithOtp({ phone });
+        if (error) {
+          setNotice({ type: "error", message: formatAuthError(error) });
+          return;
+        }
+        setOtpSent(true);
+        setNotice({
+          type: "success",
+          message: "We sent you a code. Enter it to continue."
+        });
         return;
       }
-      setOtpSent(true);
-      setNotice({
-        type: "success",
-        message: "We sent you a code. Enter it to continue."
+
+      if (!otp) {
+        setNotice({ type: "error", message: "Enter the SMS code." });
+        return;
+      }
+
+      const { error } = await supabase.auth.verifyOtp({
+        phone,
+        token: otp,
+        type: "sms"
       });
-      setLoading(false);
-      return;
-    }
+      if (error) {
+        setNotice({ type: "error", message: formatAuthError(error) });
+        return;
+      }
 
-    if (!otp) {
-      setNotice({ type: "error", message: "Enter the SMS code." });
+      navigate("/chat");
+    } catch (err) {
+      setThrownError(err, "Phone sign-in failed.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token: otp,
-      type: "sms"
-    });
-    if (error) setNotice({ type: "error", message: error.message });
-    setLoading(false);
   };
 
   return (
@@ -316,6 +405,23 @@ export default function LoginPage() {
                   </div>
                 ) : null}
 
+                {isSupabaseConfigured && supabaseHost ? (
+                  <p className="mt-4 text-xs font-semibold text-white/45">
+                    Supabase: {supabaseHost} ·{" "}
+                    <span
+                      className={
+                        supabaseHealth.status === "ok"
+                          ? "text-emerald-200/80"
+                          : supabaseHealth.status === "checking"
+                          ? "text-white/55"
+                          : "text-red-200/80"
+                      }
+                    >
+                      {supabaseHealth.message || "—"}
+                    </span>
+                  </p>
+                ) : null}
+
                 {method === "email" ? (
                   <form className="mt-6 space-y-5" onSubmit={handleEmailAuth}>
                     <label className="block">
@@ -325,6 +431,7 @@ export default function LoginPage() {
                       <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
                         <Mail className="h-4 w-4 text-white/55" aria-hidden="true" />
                         <input
+                          type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
@@ -376,6 +483,7 @@ export default function LoginPage() {
                       <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
                         <Phone className="h-4 w-4 text-white/55" aria-hidden="true" />
                         <input
+                          type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
@@ -394,6 +502,7 @@ export default function LoginPage() {
                         <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
                           <KeyRound className="h-4 w-4 text-white/55" aria-hidden="true" />
                           <input
+                            type="text"
                             value={otp}
                             onChange={(e) => setOtp(e.target.value)}
                             className="w-full bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Loader2, LogOut, Trash2, User } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, LogOut, Trash2, User } from "lucide-react";
 
 import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
 
@@ -12,6 +12,7 @@ export default function AccountPage() {
 
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
 
@@ -23,18 +24,23 @@ export default function AccountPage() {
   const avatarUrl = user?.user_metadata?.avatar_url || "";
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return;
+    }
 
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       const nextSession = data.session ?? null;
       if (!nextSession) {
-        navigate("/login");
+        navigate("/login", { replace: true });
+        setLoading(false);
         return;
       }
       setSession(nextSession);
       setUser(nextSession.user);
+      setLoading(false);
     });
 
     const {
@@ -43,7 +49,10 @@ export default function AccountPage() {
       const s = nextSession ?? null;
       setSession(s);
       setUser(s?.user ?? null);
-      if (!s) navigate("/login");
+      if (!s) {
+        navigate("/login", { replace: true });
+        setLoading(false);
+      }
     });
 
     return () => {
@@ -148,7 +157,21 @@ export default function AccountPage() {
     );
   }
 
-  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 to-black">
+        <div className="text-white/80">Loading…</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 to-black">
+        <div className="text-white/80">Redirecting to login…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative isolate min-h-[100dvh] overflow-x-hidden">
@@ -156,13 +179,23 @@ export default function AccountPage() {
 
       <div className="mx-auto w-full max-w-[1200px] px-4 pb-16 pt-24 sm:px-6 lg:px-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Your account
-            </h1>
-            <p className="mt-2 text-sm text-white/65 sm:text-base">
-              Manage your profile, sign out, or delete your account.
-            </p>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate("/chat")}
+              className="p-2 rounded-lg border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <div>
+              <h1 className="text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                Your account
+              </h1>
+              <p className="mt-2 text-sm text-white/65 sm:text-base">
+                Manage your profile, sign out, or delete your account.
+              </p>
+            </div>
           </div>
 
           <button
@@ -199,9 +232,6 @@ export default function AccountPage() {
                 <div className="min-w-0">
                   <p className="truncate text-base font-semibold text-white">
                     {user.email || user.phone || "User"}
-                  </p>
-                  <p className="mt-1 truncate text-xs font-semibold text-white/55">
-                    {user.id}
                   </p>
                 </div>
               </div>
@@ -310,4 +340,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
