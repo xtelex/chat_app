@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: #020617;
+}
+
+@keyframes auroraFloat1 {
+  0% {
+    transform: translate(-10%, -8%) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(10%, 6%) rotate(18deg) scale(1.05);
+  }
+  100% {
+    transform: translate(-6%, 10%) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes auroraFloat2 {
+  0% {
+    transform: translate(12%, 6%) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(-8%, -10%) rotate(-16deg) scale(1.08);
+  }
+  100% {
+    transform: translate(6%, 12%) rotate(0deg) scale(1);
+  }
+}
+
+.aurora-blob {
+  position: absolute;
+  inset: -30%;
+  filter: blur(55px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.aurora-blob--red {
+  background:
+    radial-gradient(closest-side at 35% 40%, rgba(255, 40, 90, 0.55), rgba(255, 40, 90, 0) 60%),
+    radial-gradient(closest-side at 70% 60%, rgba(255, 30, 30, 0.45), rgba(255, 30, 30, 0) 62%),
+    radial-gradient(closest-side at 55% 25%, rgba(255, 120, 190, 0.28), rgba(255, 120, 190, 0) 58%);
+  animation: auroraFloat1 14s ease-in-out infinite;
+}
+
+.aurora-blob--deep {
+  background:
+    radial-gradient(closest-side at 60% 45%, rgba(255, 0, 60, 0.35), rgba(255, 0, 60, 0) 62%),
+    radial-gradient(closest-side at 30% 70%, rgba(140, 0, 30, 0.5), rgba(140, 0, 30, 0) 65%),
+    radial-gradient(closest-side at 80% 20%, rgba(255, 70, 120, 0.22), rgba(255, 70, 120, 0) 58%);
+  animation: auroraFloat2 18s ease-in-out infinite;
+}
