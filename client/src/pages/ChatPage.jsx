@@ -1281,17 +1281,32 @@ export default function ChatPage() {
           if (status === "SUBSCRIBED") {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            // Notify via personal channel so receiver gets it even if not in call channel
-            const notifyCh = supabase.channel(`incoming_calls:${contact.id}`);
-            await notifyCh.subscribe(async (s) => {
+
+            const offerPayload = {
+              sdp: offer,
+              from: user.id,
+              callId,
+              callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0],
+              callerAvatar: currentUserAvatarUrl
+            };
+
+            // 1) Broadcast (fast path)
+            const notifyCh = supabase.channel(`incoming_calls:${contact.id}`, { config: { broadcast: { ack: false } } });
+            notifyCh.subscribe(async (s) => {
               if (s === "SUBSCRIBED") {
-                await notifyCh.send({
-                  type: "broadcast", event: "offer",
-                  payload: { sdp: offer, from: user.id, callId, callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0], callerAvatar: currentUserAvatarUrl }
-                });
-                supabase.removeChannel(notifyCh);
+                await notifyCh.send({ type: "broadcast", event: "offer", payload: offerPayload });
+                setTimeout(() => { supabase.removeChannel(notifyCh); }, 60000);
               }
             });
+
+            // 2) DB insert (reliable fallback — works even if broadcast misses)
+            supabase.from("call_signals").insert({
+              call_id: callId,
+              from_user: user.id,
+              to_user: contact.id,
+              type: "offer",
+              payload: offerPayload
+            }).then(() => {}).catch?.(() => {});
           }
         });
 
@@ -1382,29 +1397,67 @@ export default function ChatPage() {
     cleanupCall(wasMissed);
   };
 
-  // Listen for incoming calls
+  // Listen for incoming calls — use both broadcast AND a polling fallback
   useEffect(() => {
     if (!supabase || !user?.id) return;
-    const channel = supabase.channel(`incoming_calls:${user.id}`);
-    channel
-      .on("broadcast", { event: "offer" }, ({ payload }) => {
-        if (payload.from === user.id) return;
-        const callerContact = addedContacts.find((c) => c.id === payload.from) || {
-          id: payload.from,
-          name: payload.callerName || "Unknown",
-          avatar_url: payload.callerAvatar || ""
-        };
-        setCallState({
-          contact: callerContact,
-          status: "incoming",
-          isMuted: false,
-          isVideoOff: true,
-          _offerSdp: payload.sdp,
-          _callId: payload.callId
+
+    // Subscribe to personal incoming calls channel
+    const channel = supabase.channel(`incoming_calls:${user.id}`, {
+      config: { broadcast: { ack: false } }
+    });
+
+    const handleOffer = (payload) => {
+      if (!payload || payload.from === user.id) return;
+      // Don't show if already in a call
+      if (callStateRef.current) return;
+      const callerContact = addedContacts.find((c) => c.id === payload.from) || {
+        id: payload.from,
+        name: payload.callerName || "Unknown",
+        avatar_url: payload.callerAvatar || ""
+      };
+      setCallState({
+        contact: callerContact,
+        status: "incoming",
+        isMuted: false,
+        isVideoOff: true,
+        _offerSdp: payload.sdp,
+        _callId: payload.callId
+      });
+      // Show browser notification if app is in background
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification(`📞 Incoming call from ${callerContact.name}`, {
+          body: "Tap to answer",
+          icon: callerContact.avatar_url || "/src/assets/icon.png"
         });
+      }
+    };
+
+    channel
+      .on("broadcast", { event: "offer" }, ({ payload }) => handleOffer(payload))
+      .subscribe((status) => {
+        // eslint-disable-next-line no-console
+        console.log("[Call] incoming_calls channel status:", status);
+      });
+
+    // DB fallback: watch call_signals table for offers sent to me
+    const dbChannel = supabase
+      .channel(`call_signals_db:${user.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "call_signals",
+        filter: `to_user=eq.${user.id}`
+      }, ({ new: row }) => {
+        if (row?.type === "offer" && row?.payload) {
+          handleOffer(row.payload);
+        }
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(dbChannel);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
