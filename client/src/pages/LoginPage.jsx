@@ -142,6 +142,14 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
+    // Detect in-app browser (iOS/Android webview) — Google blocks OAuth in these
+    const ua = navigator.userAgent || "";
+    const isInAppBrowser = /FBAN|FBAV|Instagram|Twitter|Line|WhatsApp|Snapchat|MicroMessenger/i.test(ua)
+      || (ua.includes("iPhone") && !ua.includes("Safari"));
+    if (isInAppBrowser) {
+      setNotice({ type: "error", message: "Google sign-in doesn't work in in-app browsers. Please open this page in Safari or Chrome." });
+      return;
+    }
     resetNotices();
     if (!ensureConfigured()) return;
     if (!supabase) return;
