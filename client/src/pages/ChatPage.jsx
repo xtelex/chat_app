@@ -2246,7 +2246,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="relative isolate flex h-dvh bg-gradient-to-b from-slate-950 to-black">
+    <div className="relative isolate flex h-dvh bg-gradient-to-b from-slate-950 to-black overflow-hidden">
       {/* Hidden audio elements for WebRTC */}
       <audio ref={remoteVideoRef} autoPlay playsInline className="hidden" />
 
@@ -2404,7 +2404,11 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
       {/* Sidebar */}
-      <div className="w-[280px] border-r border-white/10 bg-black/40 backdrop-blur-xl flex flex-col">
+      <div className={`
+        ${selectedChat && currentSection === "chats" ? "hidden md:flex" : ""}
+        ${currentSection !== "chats" ? "hidden md:flex" : "flex"}
+        w-full md:w-[280px] border-r border-white/10 bg-black/40 backdrop-blur-xl flex-col flex-shrink-0 pb-16 md:pb-0
+      `}>
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -2636,7 +2640,11 @@ export default function ChatPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`
+        ${currentSection === "chats" && !selectedChat ? "hidden md:flex" : "flex"}
+        flex-1 flex-col min-w-0 pb-16 md:pb-0
+      `}>
+        {/* Mobile: show main content for non-chat sections always */}
         {currentSection === "chats" && (
           <>
             <div className="border-b border-white/10 bg-black/20 backdrop-blur-xl px-8 py-4">
@@ -3649,6 +3657,36 @@ export default function ChatPage() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Mobile bottom navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 py-2 safe-area-pb">
+        {[
+          { icon: MessageSquare, label: "Chats", section: "chats" },
+          { icon: Phone, label: "Calls", section: "calls" },
+          { icon: Users, label: "Contacts", section: "contacts" },
+          { icon: Smartphone, label: "Explore", section: "explore" },
+          { icon: Settings, label: "Settings", section: "settings" },
+        ].map(({ icon: Icon, section, label }) => (
+          <button
+            key={section}
+            type="button"
+            onClick={() => { setCurrentSection(section); if (section !== "chats") setSelectedChat(null); }}
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition ${currentSection === section ? "text-pink-400" : "text-white/40 hover:text-white/70"}`}
+          >
+            <div className="relative">
+              <Icon className="h-5 w-5" />
+              {section === "chats" && Object.values(unreadCounts).reduce((a, b) => a + b, 0) > 0 && (
+                <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 flex items-center justify-center">
+                  <span className="text-white text-[8px] font-bold leading-none">
+                    {Object.values(unreadCounts).reduce((a, b) => a + b, 0) > 9 ? "9+" : Object.values(unreadCounts).reduce((a, b) => a + b, 0)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="text-[10px] font-medium">{label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
