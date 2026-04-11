@@ -1241,38 +1241,60 @@ export default function ChatPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       localStreamRef.current = stream;
       const callId = [user.id, contact.id].sort().join("_");
+
+      // Use a single shared channel for all signaling
       const channel = supabase.channel(`call:${callId}`);
       callChannelRef.current = channel;
+
       const pc = createPeerConnection(async (candidate) => {
         await channel.send({ type: "broadcast", event: "ice", payload: { candidate, from: user.id } });
       });
       peerConnectionRef.current = pc;
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
+
       channel
         .on("broadcast", { event: "answer" }, async ({ payload }) => {
           if (payload.from === user.id) return;
-          await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-          setCallState((prev) => prev ? { ...prev, status: "active" } : prev);
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+            setCallState((prev) => prev ? { ...prev, status: "active" } : prev);
+          } catch {}
         })
         .on("broadcast", { event: "ice" }, async ({ payload }) => {
           if (payload.from === user.id) return;
           try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch {}
         })
         .on("broadcast", { event: "hangup" }, ({ payload }) => {
+          if (payload?.from === user.id) return;
           const snap = callStateRef.current;
-          // If we were still ringing (incoming, never answered) → missed call for us
           const wasMissed = snap?.status === "calling" || snap?.status === "incoming";
           cleanupCall(wasMissed);
           if (!wasMissed) toast.info("Call ended.");
+        })
+        .on("broadcast", { event: "decline" }, ({ payload }) => {
+          if (payload?.from === user.id) return;
+          cleanupCall(true);
+          toast.info(`${contact.name} declined the call.`);
         })
         .subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            await channel.send({ type: "broadcast", event: "offer", payload: { sdp: offer, from: user.id, callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0] } });
+            // Notify via personal channel so receiver gets it even if not in call channel
+            const notifyCh = supabase.channel(`incoming_calls:${contact.id}`);
+            await notifyCh.subscribe(async (s) => {
+              if (s === "SUBSCRIBED") {
+                await notifyCh.send({
+                  type: "broadcast", event: "offer",
+                  payload: { sdp: offer, from: user.id, callId, callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0], callerAvatar: currentUserAvatarUrl }
+                });
+                supabase.removeChannel(notifyCh);
+              }
+            });
           }
         });
+
       setCallState({ contact, status: "calling", isMuted: false, isVideoOff: true });
     } catch (err) {
       toast.error("Could not start call: " + (err?.message || "Permission denied"));
@@ -1285,49 +1307,63 @@ export default function ChatPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       localStreamRef.current = stream;
-      const callId = [user.id, callState.contact.id].sort().join("_");
-      const channel = callChannelRef.current || supabase.channel(`call:${callId}`);
+
+      const callId = callState._callId || [user.id, callState.contact.id].sort().join("_");
+      // Join the shared call channel
+      const channel = supabase.channel(`call:${callId}`);
       callChannelRef.current = channel;
+
       const pc = createPeerConnection(async (candidate) => {
         await channel.send({ type: "broadcast", event: "ice", payload: { candidate, from: user.id } });
       });
       peerConnectionRef.current = pc;
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
-      if (callState._offerSdp) {
-        await pc.setRemoteDescription(new RTCSessionDescription(callState._offerSdp));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await channel.send({ type: "broadcast", event: "answer", payload: { sdp: answer, from: user.id } });
-      }
-      setCallState((prev) => prev ? { ...prev, status: "active", isMuted: false } : prev);
+
+      channel
+        .on("broadcast", { event: "ice" }, async ({ payload }) => {
+          if (payload.from === user.id) return;
+          try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch {}
+        })
+        .on("broadcast", { event: "hangup" }, ({ payload }) => {
+          if (payload?.from === user.id) return;
+          const snap = callStateRef.current;
+          const wasMissed = snap?.status === "active" ? false : true;
+          cleanupCall(wasMissed);
+          if (!wasMissed) toast.info("Call ended.");
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(callState._offerSdp));
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await channel.send({ type: "broadcast", event: "answer", payload: { sdp: answer, from: user.id } });
+              setCallState((prev) => prev ? { ...prev, status: "active", isMuted: false } : prev);
+            } catch (err) {
+              toast.error("Could not answer: " + (err?.message || "Error"));
+              cleanupCall();
+            }
+          }
+        });
     } catch (err) {
       toast.error("Could not answer call: " + (err?.message || "Permission denied"));
       cleanupCall();
     }
   };
 
-  const handleHangup = async () => {
-    const snapshot = callStateRef.current;
-    const wasMissed = snapshot?.status === "calling" || snapshot?.status === "incoming";
-
-    // Send hangup on the call channel (for active/answering side)
-    if (callChannelRef.current) {
-      await callChannelRef.current.send({ type: "broadcast", event: "hangup", payload: { from: user?.id } }).catch(() => {});
-    }
-
-    // If we were the caller and they never answered, also notify via their personal channel
-    if (snapshot?.status === "calling" && snapshot?.contact?.id && supabase) {
-      const notifyCh = supabase.channel(`incoming_calls:${snapshot.contact.id}`);
-      await notifyCh.subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await notifyCh.send({ type: "broadcast", event: "hangup", payload: { from: user?.id, callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0] } }).catch(() => {});
-          supabase.removeChannel(notifyCh);
-        }
-      });
-    }
-
-    cleanupCall(wasMissed);
+  const handleDeclineCall = async () => {
+    const snap = callStateRef.current;
+    if (!snap?.contact?.id || !supabase) { cleanupCall(true); return; }
+    const callId = snap._callId || [user.id, snap.contact.id].sort().join("_");
+    const ch = supabase.channel(`call:${callId}`);
+    await ch.subscribe(async (s) => {
+      if (s === "SUBSCRIBED") {
+        await ch.send({ type: "broadcast", event: "decline", payload: { from: user.id } });
+        supabase.removeChannel(ch);
+      }
+    });
+    cleanupCall(true);
   };
 
   const toggleMute = () => {
@@ -1337,6 +1373,15 @@ export default function ChatPage() {
     setCallState((prev) => prev ? { ...prev, isMuted: !prev.isMuted } : prev);
   };
 
+  const handleHangup = async () => {
+    const snapshot = callStateRef.current;
+    const wasMissed = snapshot?.status === "calling" || snapshot?.status === "incoming";
+    if (callChannelRef.current) {
+      await callChannelRef.current.send({ type: "broadcast", event: "hangup", payload: { from: user?.id } }).catch(() => {});
+    }
+    cleanupCall(wasMissed);
+  };
+
   // Listen for incoming calls
   useEffect(() => {
     if (!supabase || !user?.id) return;
@@ -1344,25 +1389,19 @@ export default function ChatPage() {
     channel
       .on("broadcast", { event: "offer" }, ({ payload }) => {
         if (payload.from === user.id) return;
-        const callerContact = addedContacts.find((c) => c.id === payload.from) || { id: payload.from, name: payload.callerName || "Unknown", avatar_url: "" };
-        setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: payload.sdp });
-        callChannelRef.current = channel;
-
-        // Also subscribe to the shared call channel so we receive hangup if caller cancels
-        const callId = [user.id, payload.from].sort().join("_");
-        const callCh = supabase.channel(`call:${callId}`);
-        callCh
-          .on("broadcast", { event: "hangup" }, () => {
-            const snap = callStateRef.current;
-            if (snap?.status === "incoming") {
-              // Caller cancelled before we answered — missed call for us
-              injectMissedCallMessage(callerContact, false);
-              cleanupCall(false); // false = don't double-inject
-            }
-          })
-          .subscribe();
-        // Store so cleanupCall can remove it
-        callChannelRef.current = callCh;
+        const callerContact = addedContacts.find((c) => c.id === payload.from) || {
+          id: payload.from,
+          name: payload.callerName || "Unknown",
+          avatar_url: payload.callerAvatar || ""
+        };
+        setCallState({
+          contact: callerContact,
+          status: "incoming",
+          isMuted: false,
+          isVideoOff: true,
+          _offerSdp: payload.sdp,
+          _callId: payload.callId
+        });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -2259,49 +2298,89 @@ export default function ChatPage() {
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl"
           >
-            <div className="flex flex-col items-center gap-6 p-10 rounded-3xl bg-slate-900/90 border border-white/10 min-w-[280px]">
-              <div className="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+            <div className="flex flex-col items-center gap-6 p-10 rounded-3xl bg-slate-900/90 border border-white/10 min-w-[280px] max-w-sm w-full mx-4">
+              <div className="h-24 w-24 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
                 {callState.contact?.avatar_url ? (
                   <img src={callState.contact.avatar_url} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-white text-2xl font-bold">{getNameInitials(callState.contact?.name)}</span>
+                  <span className="text-white text-3xl font-bold">{getNameInitials(callState.contact?.name)}</span>
                 )}
               </div>
               <div className="text-center">
-                <p className="text-white text-lg font-semibold">{callState.contact?.name}</p>
+                <p className="text-white text-xl font-semibold">{callState.contact?.name}</p>
                 <p className="text-white/60 text-sm mt-1">
-                  {callState.status === "calling" ? "Calling…" : callState.status === "incoming" ? "Incoming call…" : "Call in progress"}
+                  {callState.status === "calling" ? "Calling…" : callState.status === "incoming" ? "Incoming call" : "Call in progress"}
                 </p>
+                {callState.status === "active" && (
+                  <p className="text-green-400 text-xs mt-1">Connected</p>
+                )}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 {callState.status === "incoming" && (
-                  <button
-                    type="button"
-                    onClick={handleAnswerCall}
-                    className="h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition"
-                    title="Answer"
-                  >
-                    <PhoneCall className="h-6 w-6 text-white" />
-                  </button>
+                  <>
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDeclineCall}
+                        className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition shadow-lg"
+                        title="Decline"
+                      >
+                        <PhoneOff className="h-7 w-7 text-white" />
+                      </button>
+                      <span className="text-xs text-white/50">Decline</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAnswerCall}
+                        className="h-16 w-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition shadow-lg animate-pulse"
+                        title="Answer"
+                      >
+                        <PhoneCall className="h-7 w-7 text-white" />
+                      </button>
+                      <span className="text-xs text-white/50">Answer</span>
+                    </div>
+                  </>
+                )}
+                {callState.status === "calling" && (
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleHangup}
+                      className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition shadow-lg"
+                      title="Cancel"
+                    >
+                      <PhoneOff className="h-7 w-7 text-white" />
+                    </button>
+                    <span className="text-xs text-white/50">Cancel</span>
+                  </div>
                 )}
                 {callState.status === "active" && (
-                  <button
-                    type="button"
-                    onClick={toggleMute}
-                    className={`h-12 w-12 rounded-full flex items-center justify-center transition ${callState.isMuted ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white hover:bg-white/20"}`}
-                    title={callState.isMuted ? "Unmute" : "Mute"}
-                  >
-                    {callState.isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                  </button>
+                  <>
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleMute}
+                        className={`h-14 w-14 rounded-full flex items-center justify-center transition ${callState.isMuted ? "bg-red-500/30 text-red-400" : "bg-white/10 text-white hover:bg-white/20"}`}
+                        title={callState.isMuted ? "Unmute" : "Mute"}
+                      >
+                        {callState.isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                      </button>
+                      <span className="text-xs text-white/50">{callState.isMuted ? "Unmute" : "Mute"}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleHangup}
+                        className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition shadow-lg"
+                        title="End call"
+                      >
+                        <PhoneOff className="h-7 w-7 text-white" />
+                      </button>
+                      <span className="text-xs text-white/50">End</span>
+                    </div>
+                  </>
                 )}
-                <button
-                  type="button"
-                  onClick={handleHangup}
-                  className="h-14 w-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition"
-                  title="End call"
-                >
-                  <PhoneOff className="h-6 w-6 text-white" />
-                </button>
               </div>
             </div>
           </motion.div>
