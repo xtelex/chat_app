@@ -1397,20 +1397,15 @@ export default function ChatPage() {
     cleanupCall(wasMissed);
   };
 
-  // Listen for incoming calls — use both broadcast AND a polling fallback
+  // Listen for incoming calls — use both broadcast AND DB fallback
   useEffect(() => {
     if (!supabase || !user?.id) return;
 
-    // Subscribe to personal incoming calls channel
-    const channel = supabase.channel(`incoming_calls:${user.id}`, {
-      config: { broadcast: { ack: false } }
-    });
-
     const handleOffer = (payload) => {
       if (!payload || payload.from === user.id) return;
-      // Don't show if already in a call
       if (callStateRef.current) return;
-      const callerContact = addedContacts.find((c) => c.id === payload.from) || {
+      // Use payload's callerName/Avatar directly — don't rely on addedContacts closure
+      const callerContact = {
         id: payload.from,
         name: payload.callerName || "Unknown",
         avatar_url: payload.callerAvatar || ""
@@ -1423,7 +1418,6 @@ export default function ChatPage() {
         _offerSdp: payload.sdp,
         _callId: payload.callId
       });
-      // Show browser notification if app is in background
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         new Notification(`📞 Incoming call from ${callerContact.name}`, {
           body: "Tap to answer",
@@ -1432,23 +1426,21 @@ export default function ChatPage() {
       }
     };
 
+    // Broadcast path
+    const channel = supabase.channel(`incoming_calls:${user.id}`);
     channel
       .on("broadcast", { event: "offer" }, ({ payload }) => handleOffer(payload))
-      .subscribe((status) => {
-        // eslint-disable-next-line no-console
-        console.log("[Call] incoming_calls channel status:", status);
-      });
+      .subscribe();
 
-    // DB fallback: watch call_signals table for offers sent to me
+    // DB realtime fallback
     const dbChannel = supabase
       .channel(`call_signals_db:${user.id}`)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
-        table: "call_signals",
-        filter: `to_user=eq.${user.id}`
+        table: "call_signals"
       }, ({ new: row }) => {
-        if (row?.type === "offer" && row?.payload) {
+        if (row?.to_user === user.id && row?.type === "offer" && row?.payload) {
           handleOffer(row.payload);
         }
       })
@@ -1458,8 +1450,7 @@ export default function ChatPage() {
       supabase.removeChannel(channel);
       supabase.removeChannel(dbChannel);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!dmTargetId) return;
