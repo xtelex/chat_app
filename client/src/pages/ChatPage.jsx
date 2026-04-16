@@ -2969,7 +2969,7 @@ export default function ChatPage() {
                                     onClick={() => handleStartCall(m._callContact || selectedChat)}
                                     className="w-full mt-1 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-xs font-semibold transition"
                                   >
-                                    Call back
+                                    {mine ? "Call again" : "Call back"}
                                   </button>
                                 </div>
                               </div>
