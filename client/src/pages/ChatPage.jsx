@@ -1314,7 +1314,11 @@ export default function ChatPage() {
         if (data) {
           for (const row of data) {
             if (row.type === "answer") {
-              try { await pc.setRemoteDescription(new RTCSessionDescription(row.payload.sdp)); setCallState((p) => p ? { ...p, status: "active" } : p); } catch {}
+              try {
+                await pc.setRemoteDescription(new RTCSessionDescription(row.payload.sdp));
+                callStartTimeRef.current = Date.now(); // start timer immediately
+                setCallState((p) => p ? { ...p, status: "active" } : p);
+              } catch {}
             } else if (row.type === "ice") {
               try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {}
             } else if (row.type === "decline") {
@@ -1392,6 +1396,7 @@ export default function ChatPage() {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await sendSignal(callerId, callId, "answer", { sdp: answer });
+      callStartTimeRef.current = Date.now(); // start timer on callee side too
       setCallState((prev) => prev ? { ...prev, status: "active", isMuted: false } : prev);
     } catch (err) {
       toast.error("Could not answer call: " + (err?.message || "Permission denied"));
@@ -1414,7 +1419,8 @@ export default function ChatPage() {
 
   const handleHangup = async () => {
     const snap = callStateRef.current;
-    const wasMissed = snap?.status === "calling" || snap?.status === "incoming";
+    const wasActive = snap?.status === "active";
+    const wasMissed = !wasActive && (snap?.status === "calling" || snap?.status === "incoming");
     if (snap?.contact?.id && snap?._callId) await sendSignal(snap.contact.id, snap._callId, "hangup", {});
     cleanupCall(wasMissed);
   };
