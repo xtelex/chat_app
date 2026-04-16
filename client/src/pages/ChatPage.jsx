@@ -1215,8 +1215,13 @@ export default function ChatPage() {
     localStreamRef.current = null;
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
-    if (callChannelRef.current && supabase) {
-      supabase.removeChannel(callChannelRef.current);
+    if (callChannelRef.current) {
+      // Handle both Supabase channel and poll-based { close() }
+      if (typeof callChannelRef.current.close === "function") {
+        callChannelRef.current.close();
+      } else if (supabase) {
+        supabase.removeChannel(callChannelRef.current);
+      }
       callChannelRef.current = null;
     }
     setCallState(null);
@@ -1263,24 +1268,30 @@ export default function ChatPage() {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
 
-      // Watch DB for answer/ice/decline/hangup from callee
-      const sigCh = supabase.channel(`sig_caller:${callId}`)
-        .on("postgres_changes", {
-          event: "INSERT", schema: "public", table: "call_signals",
-          filter: `to_user=eq.${user.id}`
-        }, async ({ new: row }) => {
-          if (row?.call_id !== callId) return;
-          if (row.type === "answer") {
-            try { await pc.setRemoteDescription(new RTCSessionDescription(row.payload.sdp)); setCallState((p) => p ? { ...p, status: "active" } : p); } catch {}
-          } else if (row.type === "ice") {
-            try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {}
-          } else if (row.type === "decline") {
-            cleanupCall(true); toast.info(`${contact.name} declined the call.`);
-          } else if (row.type === "hangup") {
-            const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended.");
+      // Poll DB for answer/ice/decline/hangup from callee
+      let callerPollActive = true;
+      const callerPoll = async () => {
+        if (!callerPollActive) return;
+        const { data } = await supabase.from("call_signals").select("*")
+          .eq("call_id", callId).eq("to_user", user.id)
+          .order("created_at", { ascending: true });
+        if (data) {
+          for (const row of data) {
+            if (row.type === "answer") {
+              try { await pc.setRemoteDescription(new RTCSessionDescription(row.payload.sdp)); setCallState((p) => p ? { ...p, status: "active" } : p); } catch {}
+            } else if (row.type === "ice") {
+              try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {}
+            } else if (row.type === "decline") {
+              callerPollActive = false; cleanupCall(true); toast.info(`${contact.name} declined the call.`); return;
+            } else if (row.type === "hangup") {
+              callerPollActive = false; const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); return;
+            }
           }
-        }).subscribe();
-      callChannelRef.current = sigCh;
+        }
+        if (callerPollActive) setTimeout(callerPoll, 2000);
+      };
+      setTimeout(callerPoll, 2000);
+      callChannelRef.current = { close: () => { callerPollActive = false; } };
 
       // Send offer via DB
       const offer = await pc.createOffer();
@@ -1297,7 +1308,9 @@ export default function ChatPage() {
       setTimeout(() => {
         const snap = callStateRef.current;
         if (snap?.status === "calling" && snap?._callId === callId) {
-          handleHangup();
+          // Send hangup signal and cleanup
+          sendSignal(contact.id, callId, "hangup", {});
+          cleanupCall(true);
         }
       }, 45000);
     } catch (err) {
@@ -1321,17 +1334,23 @@ export default function ChatPage() {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
 
-      // Watch DB for ice/hangup from caller
-      const sigCh = supabase.channel(`sig_callee:${callId}`)
-        .on("postgres_changes", {
-          event: "INSERT", schema: "public", table: "call_signals",
-          filter: `to_user=eq.${user.id}`
-        }, async ({ new: row }) => {
-          if (row?.call_id !== callId) return;
-          if (row.type === "ice") { try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {} }
-          else if (row.type === "hangup") { const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); }
-        }).subscribe();
-      callChannelRef.current = sigCh;
+      // Poll DB for ice/hangup from caller
+      let calleePollActive = true;
+      const calleePoll = async () => {
+        if (!calleePollActive) return;
+        const { data } = await supabase.from("call_signals").select("*")
+          .eq("call_id", callId).eq("to_user", user.id)
+          .order("created_at", { ascending: true });
+        if (data) {
+          for (const row of data) {
+            if (row.type === "ice") { try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {} }
+            else if (row.type === "hangup") { calleePollActive = false; const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); return; }
+          }
+        }
+        if (calleePollActive) setTimeout(calleePoll, 2000);
+      };
+      setTimeout(calleePoll, 2000);
+      callChannelRef.current = { close: () => { calleePollActive = false; } };
 
       await pc.setRemoteDescription(new RTCSessionDescription(callState._offerSdp));
       const answer = await pc.createAnswer();
@@ -1364,43 +1383,54 @@ export default function ChatPage() {
     cleanupCall(wasMissed);
   };
 
-  // Listen for incoming calls via DB realtime
+  // Listen for incoming calls — poll every 2 seconds (most reliable approach)
   useEffect(() => {
     if (!supabase || !user?.id) return;
-    const channel = supabase.channel(`incoming_calls_db:${user.id}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "call_signals",
-        filter: `to_user=eq.${user.id}`
-      }, ({ new: row }) => {
-        // eslint-disable-next-line no-console
-        console.log("[Call] received signal:", row?.type, "to:", row?.to_user, "me:", user.id);
-        if (row?.to_user !== user.id || row?.type !== "offer") return;
-        if (callStateRef.current) return;
-        const p = row.payload || {};
-        const callerContact = { id: row.from_user, name: p.callerName || "Unknown", avatar_url: p.callerAvatar || "" };
-        setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: p.sdp, _callId: p.callId });
-        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
+    let lastChecked = new Date().toISOString();
+    let active = true;
+
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const { data } = await supabase
+          .from("call_signals")
+          .select("*")
+          .eq("to_user", user.id)
+          .eq("type", "offer")
+          .gt("created_at", lastChecked)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (data && data.length > 0) {
+          const row = data[0];
+          lastChecked = row.created_at;
+          if (!callStateRef.current) {
+            const p = row.payload || {};
+            const callerContact = { id: row.from_user, name: p.callerName || "Unknown", avatar_url: p.callerAvatar || "" };
+            setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: p.sdp, _callId: p.callId });
+            if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+              new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
+            }
+            try {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)();
+              const ringInterval = setInterval(() => {
+                if (!callStateRef.current || callStateRef.current.status !== "incoming") { clearInterval(ringInterval); return; }
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 440; gain.gain.value = 0.3;
+                osc.start(); osc.stop(ctx.currentTime + 0.3);
+              }, 1000);
+              setTimeout(() => clearInterval(ringInterval), 45000);
+            } catch {}
+            toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 45000 });
+          }
         }
-        // Play ringtone
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const ringInterval = setInterval(() => {
-            if (!callStateRef.current || callStateRef.current.status !== "incoming") { clearInterval(ringInterval); return; }
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 440; gain.gain.value = 0.3;
-            osc.start(); osc.stop(ctx.currentTime + 0.3);
-          }, 1000);
-          setTimeout(() => clearInterval(ringInterval), 45000);
-        } catch {}
-        toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 45000 });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      } catch { /* ignore */ }
+    };
+
+    const interval = setInterval(poll, 2000);
+    return () => { active = false; clearInterval(interval); };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
