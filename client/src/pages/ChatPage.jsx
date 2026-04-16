@@ -57,6 +57,9 @@ export default function ChatPage() {
   const [demoMode, setDemoMode] = useState(false);
   const [selectedChat, setSelectedChat] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  // Notifications: { id, type, text, avatar, created_at, read }
+  const [notifications, setNotifications] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
   const [currentSection, setCurrentSection] = useState("chats");
@@ -845,7 +848,7 @@ export default function ChatPage() {
 
   // ── Emoji picker close on outside click ──────────────────────────────────────
   useEffect(() => {
-    if (!showEmojiPicker && !reactionPickerMsgId) return;
+    if (!showEmojiPicker && !reactionPickerMsgId && !showNotifications) return;
     const handler = (e) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
         setShowEmojiPicker(false);
@@ -853,10 +856,14 @@ export default function ChatPage() {
       if (reactionPickerRef.current && !reactionPickerRef.current.contains(e.target)) {
         setReactionPickerMsgId(null);
       }
+      // Close notifications if clicking outside
+      if (showNotifications && !e.target.closest("[data-notif-panel]")) {
+        setShowNotifications(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showEmojiPicker, reactionPickerMsgId]);
+  }, [showEmojiPicker, reactionPickerMsgId, showNotifications]);
 
   // ── Message reactions ────────────────────────────────────────────────────────
   const handleReact = async (messageId, emoji) => {
@@ -2063,6 +2070,16 @@ export default function ChatPage() {
           });
 
           toast.message(`${requester.name} sent you a contact request`);
+          setNotifications((prev) => [{
+            id: `req-${requesterId}-${Date.now()}`,
+            type: "contact_request",
+            text: `${requester.name} sent you a contact request`,
+            avatar: requester.avatar_url || "",
+            name: requester.name,
+            requesterId,
+            created_at: new Date().toISOString(),
+            read: false
+          }, ...prev.slice(0, 49)]);
         }
       )
       .on(
@@ -2098,9 +2115,17 @@ export default function ChatPage() {
                 .eq("id", recipientId)
                 .single();
               const name = data?.display_name || "Someone";
-              toast.success(
-                nextStatus === "accepted" ? `${name} accepted your request` : `${name} declined your request`
-              );
+              const notifText = nextStatus === "accepted" ? `${name} accepted your request` : `${name} declined your request`;
+              toast.success(notifText);
+              setNotifications((prev) => [{
+                id: `resp-${recipientId}-${Date.now()}`,
+                type: nextStatus === "accepted" ? "request_accepted" : "request_declined",
+                text: notifText,
+                avatar: "",
+                name,
+                created_at: new Date().toISOString(),
+                read: false
+              }, ...prev.slice(0, 49)]);
             }
           }
         }
@@ -2669,12 +2694,64 @@ export default function ChatPage() {
               <p className="text-xs text-white/60">Active Now</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-full hover:bg-white/10 transition text-white/70 hover:text-white"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Notification bell */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications((v) => !v)}
+                className="p-2 rounded-full hover:bg-white/10 transition text-white/70 hover:text-white relative"
+              >
+                <Bell className="h-4 w-4" />
+                {notifications.filter((n) => !n.read).length > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 top-10 z-50 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                    <span className="text-sm font-semibold text-white">Notifications</span>
+                    {notifications.some((n) => !n.read) && (
+                      <button onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))} className="text-xs text-pink-400 hover:text-pink-300 transition">
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-white/40">No notifications yet</div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`flex items-start gap-3 px-4 py-3 border-b border-white/5 hover:bg-white/5 transition cursor-pointer ${!n.read ? "bg-pink-500/5" : ""}`}
+                          onClick={() => {
+                            setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
+                            if (n.type === "contact_request") setCurrentSection("chats");
+                            setShowNotifications(false);
+                          }}
+                        >
+                          <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {n.avatar ? <img src={n.avatar} alt="" className="h-full w-full object-cover" /> : <span className="text-white text-xs font-semibold">{getNameInitials(n.name)}</span>}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-white/90 leading-snug">{n.text}</p>
+                            <p className="text-xs text-white/40 mt-0.5">{new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                          </div>
+                          {!n.read && <div className="h-2 w-2 rounded-full bg-pink-500 flex-shrink-0 mt-1.5" />}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-full hover:bg-white/10 transition text-white/70 hover:text-white"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex border-b border-white/10 px-4">
