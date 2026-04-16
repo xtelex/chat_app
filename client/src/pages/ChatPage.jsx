@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+﻿import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -79,6 +79,10 @@ export default function ChatPage() {
   const recordingRef = useRef(null);
   const recordingStreamRef = useRef(null);
   const [recording, setRecording] = useState(false);
+  const messagesEndRef = useRef(null); // for auto-scroll to bottom
+  const [typingUsers, setTypingUsers] = useState({}); // { userId: timestamp }
+  const typingTimeoutRef = useRef(null);
+  const typingChannelRef = useRef(null);
 
   // Unread message tracking: { [contactId]: count }
   const [unreadCounts, setUnreadCounts] = useState({});
@@ -1277,7 +1281,8 @@ export default function ChatPage() {
           media_mime: fmt,
         }).select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
           .single()
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) { console.error("[Call ended] DB insert error:", error.message); return; } // eslint-disable-line no-console
             if (data?.id) {
               setDmMessages((prev) => prev.map((m) =>
                 m.id === localMsg.id ? { ...data, _callContact: snapshot.contact } : m
@@ -1605,6 +1610,40 @@ export default function ChatPage() {
         setCallHistoryLoading(false);
       });
   }, [currentSection, user?.id, addedContacts]);
+
+  // Auto-scroll to bottom when messages load or new message arrives
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [dmMessages]);
+
+  // Typing indicator — subscribe to typing channel when chat opens
+  useEffect(() => {
+    if (!supabase || !user?.id || !dmTargetId) return;
+    const chName = `typing:${[user.id, dmTargetId].sort().join("_")}`;
+    const ch = supabase.channel(chName)
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload?.userId === user.id) return;
+        setTypingUsers((prev) => ({ ...prev, [payload.userId]: Date.now() }));
+        // Clear after 3 seconds of no typing
+        setTimeout(() => {
+          setTypingUsers((prev) => {
+            const next = { ...prev };
+            if (next[payload.userId] && Date.now() - next[payload.userId] >= 2800) delete next[payload.userId];
+            return next;
+          });
+        }, 3000);
+      })
+      .subscribe();
+    typingChannelRef.current = ch;
+    return () => { supabase.removeChannel(ch); typingChannelRef.current = null; };
+  }, [dmTargetId, user?.id]);
+
+  const sendTypingIndicator = () => {
+    if (!typingChannelRef.current || !user?.id) return;
+    typingChannelRef.current.send({ type: "broadcast", event: "typing", payload: { userId: user.id } });
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {}, 2000);
+  };
 
   // Clear unread when opening a chat + save last-seen timestamp
   useEffect(() => {
@@ -2938,8 +2977,7 @@ export default function ChatPage() {
 
                   <div className="flex-1 overflow-y-auto px-6 py-6 space-y-3">
                     {dmLoading ? (
-                      <div className="text-sm text-white/60">Loading messages…</div>
-                    ) : dmError ? (
+                      <div className="text-sm text-white/60">Loading messages…</div>                    ) : dmError ? (
                       <div className="text-sm text-red-200/80 whitespace-pre-line">{dmError}</div>
                     ) : dmMessages.length === 0 ? (
                       <div className="text-sm text-white/60">Start the conversation!</div>
@@ -3060,9 +3098,21 @@ export default function ChatPage() {
                         );
                       })
                     )}
+                    <div ref={messagesEndRef} />
                   </div>
 
                   <div className="border-t border-white/10 bg-black/20 px-6 py-4">
+                    {/* Typing indicator */}
+                    {Object.keys(typingUsers).length > 0 && (
+                      <div className="flex items-center gap-2 px-1 pb-2">
+                        <div className="flex gap-1">
+                          <span className="h-2 w-2 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="h-2 w-2 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="h-2 w-2 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                        <span className="text-xs text-white/40">{dmDisplayName} is typing…</span>
+                      </div>
+                    )}
                     {blockedIds.has(dmTargetId) ? (
                       /* Blocker's view */
                       <div className="flex flex-col items-center gap-3 py-2">
@@ -3140,7 +3190,7 @@ export default function ChatPage() {
                         )}
                         <textarea
                           value={messageText}
-                          onChange={(e) => setMessageText(e.target.value)}
+                          onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
                           placeholder={recording ? "Recording voice…" : "Message"}
                           rows={1}
                           onKeyDown={(e) => {
