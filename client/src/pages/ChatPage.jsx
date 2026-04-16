@@ -1292,6 +1292,14 @@ export default function ChatPage() {
       });
 
       setCallState({ contact, status: "calling", isMuted: false, isVideoOff: true, _callId: callId });
+
+      // Auto-cancel after 45 seconds if no answer
+      setTimeout(() => {
+        const snap = callStateRef.current;
+        if (snap?.status === "calling" && snap?._callId === callId) {
+          handleHangup();
+        }
+      }, 45000);
     } catch (err) {
       toast.error("Could not start call: " + (err?.message || "Permission denied"));
       cleanupCall();
@@ -1376,7 +1384,20 @@ export default function ChatPage() {
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
         }
-        toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 30000 });
+        // Play ringtone
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const ringInterval = setInterval(() => {
+            if (!callStateRef.current || callStateRef.current.status !== "incoming") { clearInterval(ringInterval); return; }
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 440; gain.gain.value = 0.3;
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
+          }, 1000);
+          setTimeout(() => clearInterval(ringInterval), 45000);
+        } catch {}
+        toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 45000 });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
