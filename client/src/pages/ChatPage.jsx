@@ -1454,6 +1454,8 @@ export default function ChatPage() {
               const p = row.payload || {};
               const callerContact = { id: row.from_user, name: p.callerName || "Unknown", avatar_url: p.callerAvatar || "" };
               console.log("[Call poll] incoming call from:", callerContact.name); // eslint-disable-line no-console
+              // Mark all rows from this caller as seen to prevent duplicate processing
+              data.forEach((r) => { if (r.from_user === row.from_user) seenIds.add(r.id); });
               setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: p.sdp, _callId: p.callId });
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
                 new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
@@ -1471,6 +1473,7 @@ export default function ChatPage() {
                 setTimeout(() => clearInterval(ringInterval), 45000);
               } catch {}
               toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 45000 });
+              break; // Only process one incoming call at a time
             }
           }
         }
