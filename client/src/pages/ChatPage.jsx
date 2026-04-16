@@ -1020,7 +1020,8 @@ export default function ChatPage() {
     if (!supabase || !user?.id) return;
     // Initial load
     supabase.from("blocks").select("blocker_id").eq("blocked_id", user.id)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) return; // table may not exist yet — default to empty (no one blocked me)
         if (Array.isArray(data)) setBlockedByIds(new Set(data.map((r) => r.blocker_id)));
       });
     // Realtime: someone blocks or unblocks me
