@@ -1875,8 +1875,35 @@ export default function ChatPage() {
     }
   };
 
-  const handleRespondToRequest = async (requesterId, status) => {
-    if (!requesterId) return;
+  const handleCancelRequest = async (recipientId) => {
+    if (!recipientId || !user?.id) return;
+    markPendingAction(recipientId, "cancel");
+    try {
+      // Try backend first
+      if (session?.access_token) {
+        const res = await fetch(`${apiBaseUrl}/api/users/contact-requests`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ recipientId })
+        }).catch(() => null);
+        if (res?.ok) {
+          setOutgoingRequests((prev) => prev.filter((r) => r.recipient_id !== recipientId));
+          toast.success("Request cancelled");
+          return;
+        }
+      }
+      // Fallback: delete directly from Supabase
+      if (supabase) {
+        await supabase.from("contact_requests").delete()
+          .eq("requester_id", user.id).eq("recipient_id", recipientId);
+        setOutgoingRequests((prev) => prev.filter((r) => r.recipient_id !== recipientId));
+        toast.success("Request cancelled");
+      }
+    } catch { toast.error("Failed to cancel request"); }
+    finally { clearPendingAction(recipientId); }
+  };
+
+  const handleRespondToRequest = async (requesterId, status) => {    if (!requesterId) return;
     if (!["accepted", "declined"].includes(status)) return;
     if (demoMode || !session?.access_token) return;
 
@@ -2805,19 +2832,18 @@ export default function ChatPage() {
                   const pendingAction = pendingActionByUserId[result.id];
                   const isPending = Boolean(pendingAction);
 
-                  const buttonDisabled = alreadyAdded || outgoingPending || isPending;
+                  const buttonDisabled = alreadyAdded || isPending;
                   const buttonLabel = isPending
-                    ? pendingAction === "add"
-                      ? "Sending…"
-                      : "Updating…"
-                    : alreadyAdded
-                    ? "Added"
-                    : outgoingPending
-                      ? "Requested"
-                      : incomingPending
-                        ? "Accept"
-                        : "Add";
+                    ? pendingAction === "add" ? "Sending…" : pendingAction === "cancel" ? "Cancelling…" : "Updating…"
+                    : alreadyAdded ? "Added"
+                    : outgoingPending ? "Requested"
+                    : incomingPending ? "Accept"
+                    : "Add";
                   const handleClick = async () => {
+                    if (outgoingPending) {
+                      await handleCancelRequest(result.id);
+                      return;
+                    }
                     if (incomingPending) {
                       await handleRespondToRequest(result.id, "accepted");
                       return;
@@ -2854,7 +2880,11 @@ export default function ChatPage() {
                         type="button"
                         onClick={handleClick}
                         disabled={buttonDisabled}
-                        className="inline-flex items-center gap-2 rounded-lg bg-pink-500/15 px-3 py-2 text-xs font-semibold text-pink-300 hover:bg-pink-500/25 disabled:cursor-not-allowed disabled:opacity-60 transition"
+                        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60 transition ${
+                          outgoingPending
+                            ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                            : "bg-pink-500/15 text-pink-300 hover:bg-pink-500/25"
+                        }`}
                         whileTap={{ scale: 0.96 }}
                         whileHover={buttonDisabled ? undefined : { scale: 1.02 }}
                         aria-busy={isPending}
@@ -3536,9 +3566,22 @@ export default function ChatPage() {
                             </div>
                           </div>
 
-                          <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-white/60">
-                            Pending
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-white/50">
+                              Pending
+                            </span>
+                            <motion.button
+                              type="button"
+                              onClick={() => handleCancelRequest(req.recipient_id)}
+                              disabled={Boolean(pendingActionByUserId[req.recipient_id])}
+                              className="rounded-full bg-red-500/10 hover:bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-400 transition disabled:opacity-60"
+                              whileTap={{ scale: 0.96 }}
+                            >
+                              {pendingActionByUserId[req.recipient_id] === "cancel" ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : "Cancel"}
+                            </motion.button>
+                          </div>
                         </div>
                       );
                     })}
