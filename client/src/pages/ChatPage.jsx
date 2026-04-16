@@ -1728,7 +1728,7 @@ export default function ChatPage() {
             const { data, error } = await supabase
               .from("profiles")
               .select("id, display_name, avatar_url")
-              .ilike("display_name", `%${q}%`)
+              .or(`display_name.ilike.%${q}%`)
               .neq("id", user?.id)
               .limit(15);
 
