@@ -1386,49 +1386,63 @@ export default function ChatPage() {
   // Listen for incoming calls — poll every 2 seconds (most reliable approach)
   useEffect(() => {
     if (!supabase || !user?.id) return;
-    let lastChecked = new Date().toISOString();
+    // Start from 10 seconds ago to catch any recent missed calls
+    let lastChecked = new Date(Date.now() - 10000).toISOString();
     let active = true;
+    const seenIds = new Set();
 
     const poll = async () => {
       if (!active) return;
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("call_signals")
           .select("*")
           .eq("to_user", user.id)
           .eq("type", "offer")
-          .gt("created_at", lastChecked)
+          .gte("created_at", lastChecked)
           .order("created_at", { ascending: false })
-          .limit(1);
+          .limit(5);
+
+        // eslint-disable-next-line no-console
+        if (error) console.error("[Call poll] error:", error.message);
 
         if (data && data.length > 0) {
-          const row = data[0];
-          lastChecked = row.created_at;
-          if (!callStateRef.current) {
-            const p = row.payload || {};
-            const callerContact = { id: row.from_user, name: p.callerName || "Unknown", avatar_url: p.callerAvatar || "" };
-            setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: p.sdp, _callId: p.callId });
-            if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-              new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
+          // eslint-disable-next-line no-console
+          console.log("[Call poll] found", data.length, "offer(s)");
+          for (const row of data) {
+            if (seenIds.has(row.id)) continue;
+            seenIds.add(row.id);
+            lastChecked = row.created_at;
+            if (!callStateRef.current) {
+              const p = row.payload || {};
+              const callerContact = { id: row.from_user, name: p.callerName || "Unknown", avatar_url: p.callerAvatar || "" };
+              // eslint-disable-next-line no-console
+              console.log("[Call poll] showing incoming call from:", callerContact.name);
+              setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: p.sdp, _callId: p.callId });
+              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
+              }
+              try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const ringInterval = setInterval(() => {
+                  if (!callStateRef.current || callStateRef.current.status !== "incoming") { clearInterval(ringInterval); return; }
+                  const osc = ctx.createOscillator();
+                  const gain = ctx.createGain();
+                  osc.connect(gain); gain.connect(ctx.destination);
+                  osc.frequency.value = 440; gain.gain.value = 0.3;
+                  osc.start(); osc.stop(ctx.currentTime + 0.3);
+                }, 1000);
+                setTimeout(() => clearInterval(ringInterval), 45000);
+              } catch {}
+              toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 45000 });
             }
-            try {
-              const ctx = new (window.AudioContext || window.webkitAudioContext)();
-              const ringInterval = setInterval(() => {
-                if (!callStateRef.current || callStateRef.current.status !== "incoming") { clearInterval(ringInterval); return; }
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.frequency.value = 440; gain.gain.value = 0.3;
-                osc.start(); osc.stop(ctx.currentTime + 0.3);
-              }, 1000);
-              setTimeout(() => clearInterval(ringInterval), 45000);
-            } catch {}
-            toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 45000 });
           }
         }
-      } catch { /* ignore */ }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[Call poll] exception:", e?.message);
+      }
     };
-
     const interval = setInterval(poll, 2000);
     return () => { active = false; clearInterval(interval); };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
