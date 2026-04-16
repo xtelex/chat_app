@@ -1173,16 +1173,17 @@ export default function ChatPage() {
   // Keep callStateRef in sync; start/stop call timer
   useEffect(() => {
     callStateRef.current = callState;
-    if (callState?.status === "active" && !callStartTimeRef.current) {
-      callStartTimeRef.current = Date.now();
-      setCallDuration(0);
-      callTimerRef.current = setInterval(() => {
+    if (callState?.status === "active") {
+      if (!callStartTimeRef.current) callStartTimeRef.current = Date.now();
+      if (!callTimerRef.current) {
         setCallDuration(Math.floor((Date.now() - callStartTimeRef.current) / 1000));
-      }, 1000);
+        callTimerRef.current = setInterval(() => {
+          setCallDuration(Math.floor((Date.now() - callStartTimeRef.current) / 1000));
+        }, 1000);
+      }
     }
-    if (!callState && callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-      callTimerRef.current = null;
+    if (!callState) {
+      if (callTimerRef.current) { clearInterval(callTimerRef.current); callTimerRef.current = null; }
       callStartTimeRef.current = null;
       setCallDuration(0);
     }
