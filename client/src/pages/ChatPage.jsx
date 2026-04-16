@@ -1247,7 +1247,6 @@ export default function ChatPage() {
     setCallState(null);
 
     if (wasActive && durationSecs > 0 && snapshot?.contact) {
-      // Inject "call ended" message with duration
       const fmt = durationSecs >= 60
         ? `${Math.floor(durationSecs / 60)} min${Math.floor(durationSecs / 60) > 1 ? "s" : ""}, ${durationSecs % 60} sec`
         : `${durationSecs} sec`;
@@ -1256,14 +1255,13 @@ export default function ChatPage() {
         created_at: new Date().toISOString(),
         sender_id: user?.id,
         recipient_id: snapshot.contact.id,
-        text: null,
-        media_path: null,
+        text: null, media_path: null,
         media_type: "call_ended",
         media_mime: fmt,
         _callContact: snapshot.contact,
       };
       setDmMessages((prev) => [...prev, endedMsg]);
-    } else if (wasMissed && snapshot) {
+    } else if (wasMissed && snapshot && !wasActive) {
       const iCalledThem = snapshot.status === "calling";
       const isIncoming = snapshot.status === "incoming";
       if (iCalledThem || isIncoming) {
@@ -1322,7 +1320,7 @@ export default function ChatPage() {
             } else if (row.type === "decline") {
               callerPollActive = false; cleanupCall(true); toast.info(`${contact.name} declined the call.`); return;
             } else if (row.type === "hangup") {
-              callerPollActive = false; const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); return;
+              callerPollActive = false; const s = callStateRef.current; cleanupCall(s?.status === "active" ? false : true); if (s?.status === "active") toast.info("Call ended."); return;
             }
           }
         }
@@ -1382,7 +1380,7 @@ export default function ChatPage() {
         if (data) {
           for (const row of data) {
             if (row.type === "ice") { try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {} }
-            else if (row.type === "hangup") { calleePollActive = false; const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); return; }
+            else if (row.type === "hangup") { calleePollActive = false; const s = callStateRef.current; cleanupCall(s?.status === "active" ? false : true); if (s?.status === "active") toast.info("Call ended."); return; }
           }
         }
         if (calleePollActive) setTimeout(calleePoll, 2000);
