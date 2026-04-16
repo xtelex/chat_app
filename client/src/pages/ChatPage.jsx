@@ -1722,8 +1722,8 @@ export default function ChatPage() {
           if (controller.signal.aborted) return;
           const rawMessage = String(err?.message || "");
 
-          // If the backend isn't reachable, fall back to querying Supabase directly.
-          if (/failed to fetch|networkerror/i.test(rawMessage) && supabase) {
+          // Fall back to Supabase directly if backend is unreachable OR returns auth error
+          if (supabase && (/failed to fetch|networkerror/i.test(rawMessage) || /401|403|unauthorized/i.test(rawMessage))) {
             const { data, error } = await supabase
               .from("profiles")
               .select("id, display_name, avatar_url")
@@ -1812,7 +1812,7 @@ export default function ChatPage() {
       toast.success("Request sent");
     } catch (err) {
       const rawMessage = String(err?.message || "");
-      if (/failed to fetch|networkerror/i.test(rawMessage)) {
+      if (/failed to fetch|networkerror|401|403|unauthorized/i.test(rawMessage)) {
         // Fallback: create request directly in Supabase.
         if (supabase && user?.id) {
           const { error } = await supabase.from("contact_requests").insert({
