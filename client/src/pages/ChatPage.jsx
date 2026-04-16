@@ -2707,7 +2707,7 @@ export default function ChatPage() {
                 )}
               </button>
               {showNotifications && (
-                <div className="absolute right-0 top-10 z-50 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="fixed left-0 top-16 z-50 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden ml-2">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                     <span className="text-sm font-semibold text-white">Notifications</span>
                     {notifications.some((n) => !n.read) && (
