@@ -51,6 +51,22 @@ export default function ChatPage() {
   const lastOutgoingDecisionAtRef = useRef(0);
   const lastIncomingRequestAtRef = useRef(0);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
+  // Fetch with a short timeout so localhost calls fail fast on mobile
+  const fetchWithTimeout = (url, options = {}, ms = 3000) => {
+    const timeoutController = new AbortController();
+    const id = setTimeout(() => timeoutController.abort(), ms);
+    // If caller passes their own signal, abort on either
+    const signal = options.signal
+      ? (() => {
+          const combined = new AbortController();
+          options.signal.addEventListener("abort", () => combined.abort());
+          timeoutController.signal.addEventListener("abort", () => combined.abort());
+          return combined.signal;
+        })()
+      : timeoutController.signal;
+    return fetch(url, { ...options, signal }).finally(() => clearTimeout(id));
+  };
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1696,12 +1712,12 @@ export default function ChatPage() {
     const controller = new AbortController();
     const debounce = setTimeout(() => {
       setSearchLoading(true);
-      fetch(`${apiBaseUrl}/api/users/search?q=${encodeURIComponent(q)}`, {
+      fetchWithTimeout(`${apiBaseUrl}/api/users/search?q=${encodeURIComponent(q)}`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`
         },
         signal: controller.signal
-      })
+      }, 2000)
         .then(async (res) => {
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
@@ -1723,8 +1739,8 @@ export default function ChatPage() {
           if (controller.signal.aborted) return;
           const rawMessage = String(err?.message || "");
 
-          // Fall back to Supabase directly if backend is unreachable OR returns auth error
-          if (supabase && (/failed to fetch|networkerror/i.test(rawMessage) || /401|403|unauthorized/i.test(rawMessage))) {
+          // Fall back to Supabase on any backend failure (timeout, network error, 401, abort)
+          if (supabase) {
             const { data, error } = await supabase
               .from("profiles")
               .select("id, display_name, avatar_url")
@@ -1746,14 +1762,7 @@ export default function ChatPage() {
           }
 
           setSearchResults([]);
-          if (/failed to fetch|networkerror/i.test(rawMessage)) {
-            setSearchError(
-              `Can't reach the API at ${apiBaseUrl}. Start the backend server on that URL/port, then try again.`
-            );
-            return;
-          }
-
-          setSearchError(rawMessage || "Search failed.");
+          setSearchError(/failed to fetch|networkerror|abort/i.test(rawMessage) ? null : (rawMessage || "Search failed."));
         })
         .finally(() => {
           if (!controller.signal.aborted) setSearchLoading(false);
