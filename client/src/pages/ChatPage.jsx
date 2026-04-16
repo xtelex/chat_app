@@ -1235,82 +1235,55 @@ export default function ChatPage() {
     return pc;
   };
 
+  // ── DB-only call signaling ───────────────────────────────────────────────────
+  const sendSignal = async (toUser, callId, type, payload = {}) => {
+    if (!supabase || !user?.id) return;
+    await supabase.from("call_signals").insert({
+      call_id: callId, from_user: user.id, to_user: toUser, type,
+      payload: { ...payload, from: user.id, callId }
+    }).then(() => {}).catch?.(() => {});
+  };
+
   const handleStartCall = async (contact) => {
     if (!supabase || !user?.id || !contact?.id) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       localStreamRef.current = stream;
-      const callId = [user.id, contact.id].sort().join("_");
-
-      // Use a single shared channel for all signaling
-      const channel = supabase.channel(`call:${callId}`);
-      callChannelRef.current = channel;
+      const callId = [user.id, contact.id].sort().join("_") + "_" + Date.now();
 
       const pc = createPeerConnection(async (candidate) => {
-        await channel.send({ type: "broadcast", event: "ice", payload: { candidate, from: user.id } });
+        await sendSignal(contact.id, callId, "ice", { candidate });
       });
       peerConnectionRef.current = pc;
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
 
-      channel
-        .on("broadcast", { event: "answer" }, async ({ payload }) => {
-          if (payload.from === user.id) return;
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-            setCallState((prev) => prev ? { ...prev, status: "active" } : prev);
-          } catch {}
-        })
-        .on("broadcast", { event: "ice" }, async ({ payload }) => {
-          if (payload.from === user.id) return;
-          try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch {}
-        })
-        .on("broadcast", { event: "hangup" }, ({ payload }) => {
-          if (payload?.from === user.id) return;
-          const snap = callStateRef.current;
-          const wasMissed = snap?.status === "calling" || snap?.status === "incoming";
-          cleanupCall(wasMissed);
-          if (!wasMissed) toast.info("Call ended.");
-        })
-        .on("broadcast", { event: "decline" }, ({ payload }) => {
-          if (payload?.from === user.id) return;
-          cleanupCall(true);
-          toast.info(`${contact.name} declined the call.`);
-        })
-        .subscribe(async (status) => {
-          if (status === "SUBSCRIBED") {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-
-            const offerPayload = {
-              sdp: offer,
-              from: user.id,
-              callId,
-              callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0],
-              callerAvatar: currentUserAvatarUrl
-            };
-
-            // 1) Broadcast (fast path)
-            const notifyCh = supabase.channel(`incoming_calls:${contact.id}`, { config: { broadcast: { ack: false } } });
-            notifyCh.subscribe(async (s) => {
-              if (s === "SUBSCRIBED") {
-                await notifyCh.send({ type: "broadcast", event: "offer", payload: offerPayload });
-                setTimeout(() => { supabase.removeChannel(notifyCh); }, 60000);
-              }
-            });
-
-            // 2) DB insert (reliable fallback — works even if broadcast misses)
-            supabase.from("call_signals").insert({
-              call_id: callId,
-              from_user: user.id,
-              to_user: contact.id,
-              type: "offer",
-              payload: offerPayload
-            }).then(() => {}).catch?.(() => {});
+      // Watch DB for answer/ice/decline/hangup from callee
+      const sigCh = supabase.channel(`sig_caller:${callId}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, async ({ new: row }) => {
+          if (row?.call_id !== callId || row?.to_user !== user.id) return;
+          if (row.type === "answer") {
+            try { await pc.setRemoteDescription(new RTCSessionDescription(row.payload.sdp)); setCallState((p) => p ? { ...p, status: "active" } : p); } catch {}
+          } else if (row.type === "ice") {
+            try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {}
+          } else if (row.type === "decline") {
+            cleanupCall(true); toast.info(`${contact.name} declined the call.`);
+          } else if (row.type === "hangup") {
+            const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended.");
           }
-        });
+        }).subscribe();
+      callChannelRef.current = sigCh;
 
-      setCallState({ contact, status: "calling", isMuted: false, isVideoOff: true });
+      // Send offer via DB
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await sendSignal(contact.id, callId, "offer", {
+        sdp: offer,
+        callerName: user?.user_metadata?.full_name || user?.email?.split("@")[0],
+        callerAvatar: currentUserAvatarUrl
+      });
+
+      setCallState({ contact, status: "calling", isMuted: false, isVideoOff: true, _callId: callId });
     } catch (err) {
       toast.error("Could not start call: " + (err?.message || "Permission denied"));
       cleanupCall();
@@ -1322,45 +1295,30 @@ export default function ChatPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       localStreamRef.current = stream;
-
-      const callId = callState._callId || [user.id, callState.contact.id].sort().join("_");
-      // Join the shared call channel
-      const channel = supabase.channel(`call:${callId}`);
-      callChannelRef.current = channel;
+      const callId = callState._callId;
+      const callerId = callState.contact.id;
 
       const pc = createPeerConnection(async (candidate) => {
-        await channel.send({ type: "broadcast", event: "ice", payload: { candidate, from: user.id } });
+        await sendSignal(callerId, callId, "ice", { candidate });
       });
       peerConnectionRef.current = pc;
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
 
-      channel
-        .on("broadcast", { event: "ice" }, async ({ payload }) => {
-          if (payload.from === user.id) return;
-          try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch {}
-        })
-        .on("broadcast", { event: "hangup" }, ({ payload }) => {
-          if (payload?.from === user.id) return;
-          const snap = callStateRef.current;
-          const wasMissed = snap?.status === "active" ? false : true;
-          cleanupCall(wasMissed);
-          if (!wasMissed) toast.info("Call ended.");
-        })
-        .subscribe(async (status) => {
-          if (status === "SUBSCRIBED") {
-            try {
-              await pc.setRemoteDescription(new RTCSessionDescription(callState._offerSdp));
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              await channel.send({ type: "broadcast", event: "answer", payload: { sdp: answer, from: user.id } });
-              setCallState((prev) => prev ? { ...prev, status: "active", isMuted: false } : prev);
-            } catch (err) {
-              toast.error("Could not answer: " + (err?.message || "Error"));
-              cleanupCall();
-            }
-          }
-        });
+      // Watch DB for ice/hangup from caller
+      const sigCh = supabase.channel(`sig_callee:${callId}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, async ({ new: row }) => {
+          if (row?.call_id !== callId || row?.to_user !== user.id) return;
+          if (row.type === "ice") { try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {} }
+          else if (row.type === "hangup") { const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); }
+        }).subscribe();
+      callChannelRef.current = sigCh;
+
+      await pc.setRemoteDescription(new RTCSessionDescription(callState._offerSdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await sendSignal(callerId, callId, "answer", { sdp: answer });
+      setCallState((prev) => prev ? { ...prev, status: "active", isMuted: false } : prev);
     } catch (err) {
       toast.error("Could not answer call: " + (err?.message || "Permission denied"));
       cleanupCall();
@@ -1369,15 +1327,7 @@ export default function ChatPage() {
 
   const handleDeclineCall = async () => {
     const snap = callStateRef.current;
-    if (!snap?.contact?.id || !supabase) { cleanupCall(true); return; }
-    const callId = snap._callId || [user.id, snap.contact.id].sort().join("_");
-    const ch = supabase.channel(`call:${callId}`);
-    await ch.subscribe(async (s) => {
-      if (s === "SUBSCRIBED") {
-        await ch.send({ type: "broadcast", event: "decline", payload: { from: user.id } });
-        supabase.removeChannel(ch);
-      }
-    });
+    if (snap?.contact?.id && snap?._callId) await sendSignal(snap.contact.id, snap._callId, "decline", {});
     cleanupCall(true);
   };
 
@@ -1389,67 +1339,29 @@ export default function ChatPage() {
   };
 
   const handleHangup = async () => {
-    const snapshot = callStateRef.current;
-    const wasMissed = snapshot?.status === "calling" || snapshot?.status === "incoming";
-    if (callChannelRef.current) {
-      await callChannelRef.current.send({ type: "broadcast", event: "hangup", payload: { from: user?.id } }).catch(() => {});
-    }
+    const snap = callStateRef.current;
+    const wasMissed = snap?.status === "calling" || snap?.status === "incoming";
+    if (snap?.contact?.id && snap?._callId) await sendSignal(snap.contact.id, snap._callId, "hangup", {});
     cleanupCall(wasMissed);
   };
 
-  // Listen for incoming calls — use both broadcast AND DB fallback
+  // Listen for incoming calls via DB realtime
   useEffect(() => {
     if (!supabase || !user?.id) return;
-
-    const handleOffer = (payload) => {
-      if (!payload || payload.from === user.id) return;
-      if (callStateRef.current) return;
-      // Use payload's callerName/Avatar directly — don't rely on addedContacts closure
-      const callerContact = {
-        id: payload.from,
-        name: payload.callerName || "Unknown",
-        avatar_url: payload.callerAvatar || ""
-      };
-      setCallState({
-        contact: callerContact,
-        status: "incoming",
-        isMuted: false,
-        isVideoOff: true,
-        _offerSdp: payload.sdp,
-        _callId: payload.callId
-      });
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        new Notification(`📞 Incoming call from ${callerContact.name}`, {
-          body: "Tap to answer",
-          icon: callerContact.avatar_url || "/src/assets/icon.png"
-        });
-      }
-    };
-
-    // Broadcast path
-    const channel = supabase.channel(`incoming_calls:${user.id}`);
-    channel
-      .on("broadcast", { event: "offer" }, ({ payload }) => handleOffer(payload))
-      .subscribe();
-
-    // DB realtime fallback
-    const dbChannel = supabase
-      .channel(`call_signals_db:${user.id}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "call_signals"
-      }, ({ new: row }) => {
-        if (row?.to_user === user.id && row?.type === "offer" && row?.payload) {
-          handleOffer(row.payload);
+    const channel = supabase.channel(`incoming_calls_db:${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, ({ new: row }) => {
+        if (row?.to_user !== user.id || row?.type !== "offer") return;
+        if (callStateRef.current) return;
+        const p = row.payload || {};
+        const callerContact = { id: row.from_user, name: p.callerName || "Unknown", avatar_url: p.callerAvatar || "" };
+        setCallState({ contact: callerContact, status: "incoming", isMuted: false, isVideoOff: true, _offerSdp: p.sdp, _callId: p.callId });
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification(`📞 Incoming call from ${callerContact.name}`, { body: "Open the app to answer", icon: callerContact.avatar_url || "/src/assets/icon.png" });
         }
+        toast.info(`📞 Incoming call from ${callerContact.name}`, { duration: 30000 });
       })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(dbChannel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
