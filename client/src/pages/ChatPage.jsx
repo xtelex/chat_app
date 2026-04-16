@@ -137,6 +137,9 @@ export default function ChatPage() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const callStateRef = useRef(null); // mirror of callState for use inside closures
+  const callStartTimeRef = useRef(null); // when call became active
+  const [callDuration, setCallDuration] = useState(0); // seconds, for live timer
+  const callTimerRef = useRef(null);
 
   // Enrich call_missed messages with _missedContact so the name renders correctly
   const enrichCallMessages = (messages, contactId) =>
@@ -1148,8 +1151,23 @@ export default function ChatPage() {
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
-  // Keep callStateRef in sync so closures can read latest callState
-  useEffect(() => { callStateRef.current = callState; }, [callState]);
+  // Keep callStateRef in sync; start/stop call timer
+  useEffect(() => {
+    callStateRef.current = callState;
+    if (callState?.status === "active" && !callStartTimeRef.current) {
+      callStartTimeRef.current = Date.now();
+      setCallDuration(0);
+      callTimerRef.current = setInterval(() => {
+        setCallDuration(Math.floor((Date.now() - callStartTimeRef.current) / 1000));
+      }, 1000);
+    }
+    if (!callState && callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+      callStartTimeRef.current = null;
+      setCallDuration(0);
+    }
+  }, [callState]);
 
   // ── WebRTC Calling ───────────────────────────────────────────────────────────
 
@@ -1211,12 +1229,14 @@ export default function ChatPage() {
 
   const cleanupCall = (wasMissed = false) => {
     const snapshot = callStateRef.current;
+    const wasActive = snapshot?.status === "active";
+    const durationSecs = callStartTimeRef.current ? Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
+
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     if (callChannelRef.current) {
-      // Handle both Supabase channel and poll-based { close() }
       if (typeof callChannelRef.current.close === "function") {
         callChannelRef.current.close();
       } else if (supabase) {
@@ -1225,7 +1245,25 @@ export default function ChatPage() {
       callChannelRef.current = null;
     }
     setCallState(null);
-    if (wasMissed && snapshot) {
+
+    if (wasActive && durationSecs > 0 && snapshot?.contact) {
+      // Inject "call ended" message with duration
+      const fmt = durationSecs >= 60
+        ? `${Math.floor(durationSecs / 60)} min${Math.floor(durationSecs / 60) > 1 ? "s" : ""}, ${durationSecs % 60} sec`
+        : `${durationSecs} sec`;
+      const endedMsg = {
+        id: `call-ended-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        sender_id: user?.id,
+        recipient_id: snapshot.contact.id,
+        text: null,
+        media_path: null,
+        media_type: "call_ended",
+        media_mime: fmt,
+        _callContact: snapshot.contact,
+      };
+      setDmMessages((prev) => [...prev, endedMsg]);
+    } else if (wasMissed && snapshot) {
       const iCalledThem = snapshot.status === "calling";
       const isIncoming = snapshot.status === "incoming";
       if (iCalledThem || isIncoming) {
@@ -2348,7 +2386,9 @@ export default function ChatPage() {
                   {callState.status === "calling" ? "Calling…" : callState.status === "incoming" ? "Incoming call" : "Call in progress"}
                 </p>
                 {callState.status === "active" && (
-                  <p className="text-green-400 text-xs mt-1">Connected</p>
+                  <p className="text-green-400 text-sm mt-1 font-mono">
+                    {Math.floor(callDuration / 60).toString().padStart(2, "0")}:{(callDuration % 60).toString().padStart(2, "0")}
+                  </p>
                 )}
               </div>
               <div className="flex items-center gap-6">
@@ -2911,7 +2951,28 @@ export default function ChatPage() {
                             key={m.id}
                             className={`flex items-end gap-1 ${mine ? "justify-end" : "justify-start"}`}
                           >
-                            {m.media_type === "call_missed" || m.text?.startsWith("📵") || m.text?.startsWith("[missed_call_") ? (
+                            {m.media_type === "call_ended" ? (
+                              <div className={`flex flex-col gap-1 ${mine ? "items-end" : "items-start"}`}>
+                                <div className="inline-flex flex-col items-start gap-1 rounded-2xl px-4 py-3 bg-white/5 border border-white/10 min-w-[160px]">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                                      <Phone className="h-4 w-4 text-white/60" />
+                                    </div>
+                                    <div>
+                                      <p className="text-white text-sm font-semibold">Voice call</p>
+                                      <p className="text-green-400 text-xs">{m.media_mime || "Ended"}</p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartCall(m._callContact || selectedChat)}
+                                    className="w-full mt-1 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-xs font-semibold transition"
+                                  >
+                                    Call back
+                                  </button>
+                                </div>
+                              </div>
+                            ) : m.media_type === "call_missed" || m.text?.startsWith("📵") || m.text?.startsWith("[missed_call_") ? (
                               (() => {
                                 const iWasCaller = m.sender_id === user?.id;
                                 const otherName = m._missedContact?.name || selectedChat?.name || "them";
