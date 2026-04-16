@@ -1265,8 +1265,11 @@ export default function ChatPage() {
 
       // Watch DB for answer/ice/decline/hangup from callee
       const sigCh = supabase.channel(`sig_caller:${callId}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, async ({ new: row }) => {
-          if (row?.call_id !== callId || row?.to_user !== user.id) return;
+        .on("postgres_changes", {
+          event: "INSERT", schema: "public", table: "call_signals",
+          filter: `to_user=eq.${user.id}`
+        }, async ({ new: row }) => {
+          if (row?.call_id !== callId) return;
           if (row.type === "answer") {
             try { await pc.setRemoteDescription(new RTCSessionDescription(row.payload.sdp)); setCallState((p) => p ? { ...p, status: "active" } : p); } catch {}
           } else if (row.type === "ice") {
@@ -1312,8 +1315,11 @@ export default function ChatPage() {
 
       // Watch DB for ice/hangup from caller
       const sigCh = supabase.channel(`sig_callee:${callId}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, async ({ new: row }) => {
-          if (row?.call_id !== callId || row?.to_user !== user.id) return;
+        .on("postgres_changes", {
+          event: "INSERT", schema: "public", table: "call_signals",
+          filter: `to_user=eq.${user.id}`
+        }, async ({ new: row }) => {
+          if (row?.call_id !== callId) return;
           if (row.type === "ice") { try { await pc.addIceCandidate(new RTCIceCandidate(row.payload.candidate)); } catch {} }
           else if (row.type === "hangup") { const s = callStateRef.current; cleanupCall(s?.status !== "active"); if (s?.status === "active") toast.info("Call ended."); }
         }).subscribe();
@@ -1354,7 +1360,12 @@ export default function ChatPage() {
   useEffect(() => {
     if (!supabase || !user?.id) return;
     const channel = supabase.channel(`incoming_calls_db:${user.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, ({ new: row }) => {
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "call_signals",
+        filter: `to_user=eq.${user.id}`
+      }, ({ new: row }) => {
         // eslint-disable-next-line no-console
         console.log("[Call] received signal:", row?.type, "to:", row?.to_user, "me:", user.id);
         if (row?.to_user !== user.id || row?.type !== "offer") return;
