@@ -141,15 +141,22 @@ export default function ChatPage() {
   const [callDuration, setCallDuration] = useState(0); // seconds, for live timer
   const callTimerRef = useRef(null);
 
-  // Enrich call_missed messages with _missedContact so the name renders correctly
+  // Enrich call_missed and call_ended messages with contact info
   const enrichCallMessages = (messages, contactId) =>
     messages.map((m) => {
-      if (m.media_type !== "call_missed" || m._missedContact) return m;
-      const contact =
-        addedContacts.find((c) => c.id === contactId) ||
-        (selectedChat?.id === contactId ? selectedChat : null) ||
-        { id: contactId, name: "Unknown", avatar_url: "" };
-      return { ...m, _missedContact: contact };
+      if (m.media_type === "call_missed" && !m._missedContact) {
+        const contact = addedContacts.find((c) => c.id === contactId) ||
+          (selectedChat?.id === contactId ? selectedChat : null) ||
+          { id: contactId, name: "Unknown", avatar_url: "" };
+        return { ...m, _missedContact: contact };
+      }
+      if (m.media_type === "call_ended" && !m._callContact) {
+        const contact = addedContacts.find((c) => c.id === contactId) ||
+          (selectedChat?.id === contactId ? selectedChat : null) ||
+          { id: contactId, name: "Unknown", avatar_url: "" };
+        return { ...m, _callContact: contact };
+      }
+      return m;
     });
 
   const markPendingAction = (userId, action) => {
@@ -1230,7 +1237,6 @@ export default function ChatPage() {
   const cleanupCall = (wasMissed = false) => {
     const snapshot = callStateRef.current;
     const wasActive = snapshot?.status === "active";
-    const durationSecs = callStartTimeRef.current ? Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
 
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
@@ -1246,11 +1252,12 @@ export default function ChatPage() {
     }
     setCallState(null);
 
-    if (wasActive && durationSecs > 0 && snapshot?.contact) {
+    if (wasActive && snapshot?.contact) {
+      const durationSecs = callStartTimeRef.current ? Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
       const fmt = durationSecs >= 60
         ? `${Math.floor(durationSecs / 60)} min${Math.floor(durationSecs / 60) > 1 ? "s" : ""}, ${durationSecs % 60} sec`
-        : `${durationSecs} sec`;
-      const endedMsg = {
+        : durationSecs > 0 ? `${durationSecs} sec` : "ended";
+      const localMsg = {
         id: `call-ended-${Date.now()}`,
         created_at: new Date().toISOString(),
         sender_id: user?.id,
@@ -1260,7 +1267,24 @@ export default function ChatPage() {
         media_mime: fmt,
         _callContact: snapshot.contact,
       };
-      setDmMessages((prev) => [...prev, endedMsg]);
+      setDmMessages((prev) => [...prev, localMsg]);
+      // Persist to DB so it survives navigation
+      if (supabase) {
+        supabase.from("direct_messages").insert({
+          sender_id: user?.id,
+          recipient_id: snapshot.contact.id,
+          media_type: "call_ended",
+          media_mime: fmt,
+        }).select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
+          .single()
+          .then(({ data }) => {
+            if (data?.id) {
+              setDmMessages((prev) => prev.map((m) =>
+                m.id === localMsg.id ? { ...data, _callContact: snapshot.contact } : m
+              ));
+            }
+          }).catch?.(() => {});
+      }
     } else if (wasMissed && snapshot && !wasActive) {
       const iCalledThem = snapshot.status === "calling";
       const isIncoming = snapshot.status === "incoming";
@@ -1511,8 +1535,12 @@ export default function ChatPage() {
           if (!isRelevant) return;
           setDmMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
+            const otherId = msg.sender_id === user.id ? msg.recipient_id : msg.sender_id;
+            const otherContact = addedContacts.find((c) => c.id === otherId) || selectedChat;
             const enriched = msg.media_type === "call_missed"
-              ? { ...msg, _missedContact: addedContacts.find((c) => c.id === (msg.sender_id === user.id ? msg.recipient_id : msg.sender_id)) || selectedChat }
+              ? { ...msg, _missedContact: otherContact }
+              : msg.media_type === "call_ended"
+              ? { ...msg, _callContact: otherContact }
               : msg;
             return [...prev, enriched];
           });
