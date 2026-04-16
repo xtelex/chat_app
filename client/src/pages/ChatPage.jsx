@@ -1241,6 +1241,8 @@ export default function ChatPage() {
   const cleanupCall = (wasMissed = false) => {
     const snapshot = callStateRef.current;
     const wasActive = snapshot?.status === "active";
+    // eslint-disable-next-line no-console
+    console.log("[cleanupCall] status=", snapshot?.status, "wasActive=", wasActive, "wasMissed=", wasMissed, "startTime=", callStartTimeRef.current);
 
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
@@ -1258,6 +1260,8 @@ export default function ChatPage() {
 
     if (wasActive && snapshot?.contact) {
       const durationSecs = callStartTimeRef.current ? Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
+      // eslint-disable-next-line no-console
+      console.log("[Call ended] wasActive=true, duration=", durationSecs, "startTime=", callStartTimeRef.current);
       const fmt = durationSecs >= 60
         ? `${Math.floor(durationSecs / 60)} min${Math.floor(durationSecs / 60) > 1 ? "s" : ""}, ${durationSecs % 60} sec`
         : durationSecs > 0 ? `${durationSecs} sec` : "ended";
