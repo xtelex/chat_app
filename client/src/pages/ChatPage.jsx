@@ -1792,93 +1792,48 @@ export default function ChatPage() {
 
     markPendingAction(contact.id, "add");
     try {
-      const res = await fetch(`${apiBaseUrl}/api/users/contact-requests`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ recipientId: contact.id })
-      });
+      // Skip backend on mobile (localhost:3001 hangs) — go straight to Supabase
+      const isLocalhost = apiBaseUrl.includes("localhost") || apiBaseUrl.includes("127.0.0.1");
+      if (!isLocalhost && session?.access_token) {
+        const res = await fetchWithTimeout(`${apiBaseUrl}/api/users/contact-requests`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ recipientId: contact.id })
+        }, 2000);
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Send request failed (${res.status})`);
-      }
-
-      setOutgoingRequests((prev) => {
-        if (prev.some((r) => r.recipient_id === contact.id && r.status === "pending")) return prev;
-        return [
-          ...prev,
-          {
-            requester_id: user?.id,
-            recipient_id: contact.id,
-            status: "pending",
-            created_at: new Date().toISOString(),
-            recipient: { id: contact.id, name: contact.name, avatar_url: contact.avatar_url || "" }
-          }
-        ];
-      });
-      toast.success("Request sent");
-    } catch (err) {
-      const rawMessage = String(err?.message || "");
-      if (/failed to fetch|networkerror|401|403|unauthorized/i.test(rawMessage)) {
-        // Fallback: create request directly in Supabase.
-        if (supabase && user?.id) {
-          const { error } = await supabase.from("contact_requests").insert({
-            requester_id: user.id,
-            recipient_id: contact.id,
-            status: "pending"
+        if (res.ok) {
+          setOutgoingRequests((prev) => {
+            if (prev.some((r) => r.recipient_id === contact.id && r.status === "pending")) return prev;
+            return [...prev, { requester_id: user?.id, recipient_id: contact.id, status: "pending", created_at: new Date().toISOString(), recipient: { id: contact.id, name: contact.name, avatar_url: contact.avatar_url || "" } }];
           });
-
-          if (!error || error.code === "23505") {
-            setOutgoingRequests((prev) => {
-              if (prev.some((r) => r.recipient_id === contact.id && r.status === "pending")) return prev;
-              return [
-                ...prev,
-                {
-                  requester_id: user.id,
-                  recipient_id: contact.id,
-                  status: "pending",
-                  created_at: new Date().toISOString(),
-                  recipient: { id: contact.id, name: contact.name, avatar_url: contact.avatar_url || "" }
-                }
-              ];
-            });
-            setSearchError(null);
-            toast.success("Request sent");
-            return;
-          }
-
-          const msg = String(error.message || "");
-          if (/duplicate key value|contact_requests_pkey/i.test(msg)) {
-            toast.message("Request already sent");
-            return;
-          }
-          if (/could not find the table|schema cache|does not exist/i.test(msg)) {
-            setSearchError(
-              [
-                "Contact requests table is missing (or PostgREST schema cache is stale).",
-                "",
-                "In Supabase Dashboard -> SQL Editor run:",
-                "1) Run `supabase/migrations/20260326170000_add_contact_requests.sql`",
-                "2) Then run: select pg_notify('pgrst', 'reload schema');",
-                "3) Wait ~10 seconds and refresh this page."
-              ].join("\n")
-            );
-            return;
-          }
-
-          setSearchError(`Backend is offline and request insert failed: ${msg}`);
+          toast.success("Request sent");
+          clearPendingAction(contact.id);
           return;
         }
-
-        setSearchError(
-          `Can't reach the API at ${apiBaseUrl}. Start the backend server on that URL/port, then try again.`
-        );
-      } else {
-        setSearchError(rawMessage || "Failed to send request.");
       }
+      // Direct Supabase insert (works on all devices)
+      if (supabase && user?.id) {
+        const { error } = await supabase.from("contact_requests").insert({
+          requester_id: user.id, recipient_id: contact.id, status: "pending"
+        });
+        if (!error || error.code === "23505") {
+          setOutgoingRequests((prev) => {
+            if (prev.some((r) => r.recipient_id === contact.id && r.status === "pending")) return prev;
+            return [...prev, { requester_id: user.id, recipient_id: contact.id, status: "pending", created_at: new Date().toISOString(), recipient: { id: contact.id, name: contact.name, avatar_url: contact.avatar_url || "" } }];
+          });
+          setSearchError(null);
+          toast.success("Request sent");
+        } else {
+          const msg = String(error.message || "");
+          if (/duplicate key value|contact_requests_pkey/i.test(msg)) { toast.message("Request already sent"); }
+          else { toast.error(`Failed: ${msg}`); }
+        }
+      }
+    } catch {
+      toast.error("Failed to send request. Please try again.");
     } finally {
       clearPendingAction(contact.id);
     }
