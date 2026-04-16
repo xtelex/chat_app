@@ -1238,10 +1238,15 @@ export default function ChatPage() {
   // ── DB-only call signaling ───────────────────────────────────────────────────
   const sendSignal = async (toUser, callId, type, payload = {}) => {
     if (!supabase || !user?.id) return;
-    await supabase.from("call_signals").insert({
+    const { error } = await supabase.from("call_signals").insert({
       call_id: callId, from_user: user.id, to_user: toUser, type,
       payload: { ...payload, from: user.id, callId }
-    }).then(() => {}).catch?.(() => {});
+    });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error("[Call] sendSignal error:", type, error.message);
+      toast.error(`Call signal failed: ${error.message}`);
+    }
   };
 
   const handleStartCall = async (contact) => {
@@ -1350,6 +1355,8 @@ export default function ChatPage() {
     if (!supabase || !user?.id) return;
     const channel = supabase.channel(`incoming_calls_db:${user.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals" }, ({ new: row }) => {
+        // eslint-disable-next-line no-console
+        console.log("[Call] received signal:", row?.type, "to:", row?.to_user, "me:", user.id);
         if (row?.to_user !== user.id || row?.type !== "offer") return;
         if (callStateRef.current) return;
         const p = row.payload || {};
