@@ -76,6 +76,28 @@ html[data-theme="light"] *:not(svg):not(path):not(circle):not(rect) {
   color: #1e293b !important;
 }
 
+/* Also fix SVG icons — make strokes/fills dark */
+html[data-theme="light"] svg {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] svg path,
+html[data-theme="light"] svg circle,
+html[data-theme="light"] svg rect,
+html[data-theme="light"] svg line,
+html[data-theme="light"] svg polyline,
+html[data-theme="light"] svg polygon {
+  stroke: currentColor;
+}
+
+/* Lucide icons inherit color from parent */
+html[data-theme="light"] .lucide,
+html[data-theme="light"] [class*="h-4 w-4"],
+html[data-theme="light"] [class*="h-5 w-5"],
+html[data-theme="light"] [class*="h-6 w-6"] {
+  color: #475569 !important;
+}
+
 /* Restore colored elements */
 html[data-theme="light"] [class*="text-pink"] { color: #db2777 !important; }
 html[data-theme="light"] [class*="text-red"] { color: #dc2626 !important; }
