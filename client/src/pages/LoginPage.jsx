@@ -19,14 +19,17 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) { setChecking(false); return; }
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate("/chat", { replace: true });
-      else setChecking(false);
-    });
+    // Small delay to let Supabase restore session from storage
+    const timer = setTimeout(() => {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) navigate("/chat", { replace: true });
+        else setChecking(false);
+      });
+    }, 100);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) navigate("/chat", { replace: true });
     });
-    return () => subscription.unsubscribe();
+    return () => { clearTimeout(timer); subscription.unsubscribe(); };
   }, [navigate]);
 
   const fmt = (err) => err?.message || String(err) || "Something went wrong.";
@@ -55,7 +58,8 @@ export default function LoginPage() {
       if (authMode === "signin") {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) { setNotice({ type: "error", message: fmt(error) }); return; }
-        if (data?.session) navigate("/chat", { replace: true });
+        if (data?.session) { navigate("/chat", { replace: true }); return; }
+        setNotice({ type: "error", message: "Sign in succeeded but no session was created. Please try again." });
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) { setNotice({ type: "error", message: fmt(error) }); return; }
