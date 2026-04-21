@@ -1,7 +1,6 @@
 {
   "name": "My Chat App",
-  "short_name": "Chat",
-  "description": "A fast, private chat app",
+  "short_name": "Chat",  "description": "A fast, private chat app",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
