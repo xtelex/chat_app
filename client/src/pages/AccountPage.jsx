@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Loader2, LogOut, Trash2, User } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, LogOut, Pencil, Trash2, User } from "lucide-react";
 
 import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
 
@@ -15,6 +15,9 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [displayName, setDisplayName] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
 
   const providers = useMemo(() => {
     const p = user?.app_metadata?.providers;
@@ -41,6 +44,11 @@ export default function AccountPage() {
       setSession(nextSession);
       setUser(nextSession.user);
       setLoading(false);
+      // Load display name from profiles table
+      if (supabase && nextSession.user?.id) {
+        supabase.from("profiles").select("display_name").eq("id", nextSession.user.id).single()
+          .then(({ data }) => { if (data?.display_name) { setDisplayName(data.display_name); setNameDraft(data.display_name); } });
+      }
     });
 
     const {
@@ -63,6 +71,28 @@ export default function AccountPage() {
 
   const setError = (message) => setNotice({ type: "error", message });
   const setSuccess = (message) => setNotice({ type: "success", message });
+
+  const handleSaveDisplayName = async () => {
+    const name = nameDraft.trim();
+    if (!name) { setError("Display name cannot be empty."); return; }
+    if (!supabase || !user?.id) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      // Update profiles table
+      const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", user.id);
+      if (error) throw error;
+      // Also update auth metadata
+      await supabase.auth.updateUser({ data: { full_name: name } });
+      setDisplayName(name);
+      setEditingName(false);
+      setSuccess("Display name updated.");
+    } catch (err) {
+      setError(err?.message || "Failed to update display name.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const triggerFilePicker = () => fileInputRef.current?.click();
 
@@ -236,6 +266,41 @@ export default function AccountPage() {
                     {user.email || user.phone || "User"}
                   </p>
                 </div>
+              </div>
+
+              {/* Display name editor */}
+              <div className="mt-5">
+                {editingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveDisplayName(); if (e.key === "Escape") setEditingName(false); }}
+                      className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none focus:border-pink-500/50"
+                      placeholder="Your display name"
+                      autoFocus
+                    />
+                    <button type="button" onClick={handleSaveDisplayName} disabled={busy}
+                      className="px-4 py-2.5 rounded-xl bg-pink-500/20 text-pink-300 text-sm font-semibold hover:bg-pink-500/30 transition disabled:opacity-60">
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    </button>
+                    <button type="button" onClick={() => { setEditingName(false); setNameDraft(displayName); }}
+                      className="px-3 py-2.5 rounded-xl bg-white/5 text-white/60 text-sm hover:bg-white/10 transition">
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs text-white/50 mb-0.5">Display name</p>
+                      <p className="text-sm font-semibold text-white">{displayName || user.email?.split("@")[0] || "Set a name"}</p>
+                    </div>
+                    <button type="button" onClick={() => { setEditingName(true); setNameDraft(displayName); }}
+                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <input

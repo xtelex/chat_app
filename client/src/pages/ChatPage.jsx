@@ -128,6 +128,9 @@ export default function ChatPage() {
   const [theme, setTheme] = useState(() => localStorage.getItem("app_theme") || "dark");
   const [showAbout, setShowAbout] = useState(false);
   const [cacheSize, setCacheSize] = useState(null);
+  // Display name editing
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState("");
 
   // Emoji picker
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -1026,7 +1029,6 @@ export default function ChatPage() {
       const isBlocking = !next.has(contactId);
       if (isBlocking) next.add(contactId); else next.delete(contactId);
       try { localStorage.setItem("blocked_contacts", JSON.stringify([...next])); } catch {}
-      // Persist to Supabase
       if (supabase && user?.id) {
         if (isBlocking) {
           supabase.from("blocks").upsert({ blocker_id: user.id, blocked_id: contactId }, { onConflict: "blocker_id,blocked_id" }).then(() => {}).catch?.(() => {});
@@ -1037,6 +1039,18 @@ export default function ChatPage() {
       return next;
     });
   };
+
+  // Sync blockedIds from DB on mount to fix stale localStorage
+  useEffect(() => {
+    if (!supabase || !user?.id) return;
+    supabase.from("blocks").select("blocked_id").eq("blocker_id", user.id)
+      .then(({ data, error }) => {
+        if (error || !Array.isArray(data)) return;
+        const dbIds = new Set(data.map((r) => r.blocked_id));
+        setBlockedIds(dbIds);
+        try { localStorage.setItem("blocked_contacts", JSON.stringify([...dbIds])); } catch {}
+      }).catch(() => {});
+  }, [user?.id]);
 
   // Load who has blocked me + realtime updates
   useEffect(() => {
@@ -1156,6 +1170,22 @@ export default function ChatPage() {
       setCacheSize("0 MB");
       toast.success("Cache cleared.");
     } catch { toast.error("Failed to clear cache."); }
+  };
+
+  const handleSaveDisplayName = async () => {
+    const name = displayNameDraft.trim();
+    if (!name) { toast.error("Display name can't be empty."); return; }
+    if (!supabase || !user?.id) return;
+    try {
+      // Update auth metadata
+      await supabase.auth.updateUser({ data: { full_name: name } });
+      // Update profiles table
+      await supabase.from("profiles").update({ display_name: name }).eq("id", user.id);
+      // Update local user state
+      setUser((prev) => prev ? { ...prev, user_metadata: { ...prev.user_metadata, full_name: name } } : prev);
+      setEditingDisplayName(false);
+      toast.success("Display name updated.");
+    } catch (err) { toast.error(err?.message || "Failed to update display name."); }
   };
 
   // ── Import device contacts ───────────────────────────────────────────────────
@@ -3997,6 +4027,39 @@ export default function ChatPage() {
                     <p>Backend: Node.js + Express</p>
                     <p>Database: Supabase (Postgres)</p>
                     <p>Real-time: Supabase Realtime</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Display Name */}
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center gap-4">
+                  <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <Pencil className="h-4 w-4 text-white/60" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm">Display Name</p>
+                    <p className="text-xs text-white/50 truncate">{user?.user_metadata?.full_name || user?.email?.split("@")[0]}</p>
+                  </div>
+                  <button onClick={() => { setDisplayNameDraft(user?.user_metadata?.full_name || user?.email?.split("@")[0] || ""); setEditingDisplayName((v) => !v); }}
+                    className="text-xs text-pink-400 hover:text-pink-300 font-semibold transition">
+                    {editingDisplayName ? "Cancel" : "Edit"}
+                  </button>
+                </div>
+                {editingDisplayName && (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={displayNameDraft}
+                      onChange={(e) => setDisplayNameDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveDisplayName(); }}
+                      placeholder="Enter display name"
+                      className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-pink-500/50"
+                      autoFocus
+                    />
+                    <button onClick={handleSaveDisplayName}
+                      className="px-4 py-2 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 text-sm font-semibold transition">
+                      Save
+                    </button>
                   </div>
                 )}
               </div>
