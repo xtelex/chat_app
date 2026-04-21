@@ -141,7 +141,7 @@ export default function AccountPage() {
     setNotice(null);
     await supabase.auth.signOut();
     setBusy(false);
-    navigate("/");
+    navigate("/login", { replace: true });
   };
 
   const deleteAccount = async () => {
