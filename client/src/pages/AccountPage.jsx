@@ -116,6 +116,10 @@ export default function AccountPage() {
       const publicUrl = data?.publicUrl;
       if (!publicUrl) throw new Error("Could not get avatar public URL");
 
+      // Update profiles table (source of truth)
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+
+      // Also update auth metadata
       const { data: updated, error: updateError } = await supabase.auth.updateUser(
         { data: { avatar_url: publicUrl, avatar_path: path } }
       );

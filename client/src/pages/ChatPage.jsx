@@ -259,8 +259,24 @@ export default function ChatPage() {
         return;
       }
       setSession(nextSession);
+      // Merge profile data (display_name, avatar_url) from profiles table into user
       setUser(nextSession.user);
       setLoading(false);
+      // Load fresh profile data from DB to get latest display_name and avatar_url
+      if (supabase && nextSession.user?.id) {
+        supabase.from("profiles").select("display_name, avatar_url").eq("id", nextSession.user.id).single()
+          .then(({ data: profile }) => {
+            if (!profile) return;
+            setUser((prev) => prev ? {
+              ...prev,
+              user_metadata: {
+                ...prev.user_metadata,
+                full_name: profile.display_name || prev.user_metadata?.full_name,
+                avatar_url: profile.avatar_url || prev.user_metadata?.avatar_url,
+              }
+            } : prev);
+          });
+      }
     });
 
     const {
