@@ -3143,16 +3143,16 @@ export default function ChatPage() {
                               <>
                                 {mine && <ReactionPicker side="right" />}
                                 <div className={`flex flex-col max-w-[70%] ${mine ? "items-end" : "items-start"}`}>
-                                  <div className={`rounded-2xl px-4 py-3 text-sm shadow-sm w-full ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}>
-                                    {m.text ? <div className="whitespace-pre-wrap break-words">{m.text}</div> : null}
+                                  <div className={`rounded-2xl overflow-hidden text-sm shadow-sm w-full ${m.media_path && !m.text ? "" : `px-4 py-3 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
+                                    {m.text ? <div className="whitespace-pre-wrap break-words px-4 pt-3">{m.text}</div> : null}
                                     {m.media_path ? (
-                                      <div className={m.text ? "mt-3" : ""}>
+                                      <div className={m.text ? "mt-2" : ""}>
                                         {m.media_type === "image" ? (
-                                          mediaUrl ? <img src={mediaUrl} alt="" className="max-h-64 w-auto rounded-xl border border-white/10" /> : <div className="text-xs text-white/60">Loading image…</div>
+                                          mediaUrl ? <img src={mediaUrl} alt="" className="w-full block cursor-pointer" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-4 py-3">Loading image…</div>
                                         ) : m.media_type === "video" ? (
-                                          mediaUrl ? <video src={mediaUrl} controls className="max-h-64 w-auto rounded-xl border border-white/10" /> : <div className="text-xs text-white/60">Loading video…</div>
+                                          mediaUrl ? <video src={mediaUrl} controls className="w-full block" /> : <div className="text-xs text-white/60 px-4 py-3">Loading video…</div>
                                         ) : (
-                                          mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px]" /> : <div className="text-xs text-white/60">Loading audio…</div>
+                                          mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px] px-4 py-3" /> : <div className="text-xs text-white/60 px-4 py-3">Loading audio…</div>
                                         )}
                                       </div>
                                     ) : null}
