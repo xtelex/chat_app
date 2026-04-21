@@ -1129,17 +1129,13 @@ export default function ChatPage() {
     setTheme(t);
     localStorage.setItem("app_theme", t);
     const root = document.documentElement;
-    if (t === "light") {
-      root.classList.remove("dark");
-      root.classList.add("light");
-    } else if (t === "auto") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
-      root.classList.toggle("light", !prefersDark);
-    } else {
-      root.classList.add("dark");
-      root.classList.remove("light");
-    }
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = t === "dark" || (t === "auto" && prefersDark);
+    root.setAttribute("data-theme", isDark ? "dark" : "light");
+    root.classList.toggle("dark", isDark);
+    root.classList.toggle("light", !isDark);
+    // Apply background color directly so it's visible immediately
+    document.body.style.background = isDark ? "" : "#f8fafc";
     toast.success(`Theme set to ${t}`);
   };
 
@@ -1223,11 +1219,12 @@ export default function ChatPage() {
   useEffect(() => {
     const saved = localStorage.getItem("app_theme") || "dark";
     const root = document.documentElement;
-    if (saved === "light") { root.classList.remove("dark"); root.classList.add("light"); }
-    else if (saved === "auto") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark); root.classList.toggle("light", !prefersDark);
-    } else { root.classList.add("dark"); root.classList.remove("light"); }
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = saved === "dark" || (saved === "auto" && prefersDark);
+    root.setAttribute("data-theme", isDark ? "dark" : "light");
+    root.classList.toggle("dark", isDark);
+    root.classList.toggle("light", !isDark);
+    document.body.style.background = isDark ? "" : "#f8fafc";
   }, []);
 
   // Keep callStateRef in sync; start/stop call timer
@@ -3187,16 +3184,16 @@ export default function ChatPage() {
                               <>
                                 {mine && <ReactionPicker side="right" />}
                                 <div className={`flex flex-col max-w-[65%] ${mine ? "items-end" : "items-start"}`}>
-                                  <div className={`rounded-2xl overflow-hidden text-sm shadow-sm ${m.media_path && !m.text ? "" : `px-4 py-3 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
-                                    {m.text ? <div className="whitespace-pre-wrap break-words px-4 pt-3">{m.text}</div> : null}
+                                  <div className={`rounded-2xl overflow-hidden text-sm shadow-sm ${m.media_path && !m.text ? "" : `px-3 py-2 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
+                                    {m.text ? <div className="whitespace-pre-wrap break-words">{m.text}</div> : null}
                                     {m.media_path ? (
                                       <div className={m.text ? "mt-2" : ""}>
                                         {m.media_type === "image" ? (
-                                          mediaUrl ? <img src={mediaUrl} alt="" className="max-w-[260px] max-h-[320px] w-full object-cover block cursor-pointer rounded-2xl" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-4 py-3">Loading image…</div>
+                                          mediaUrl ? <img src={mediaUrl} alt="" className="max-w-[260px] max-h-[320px] w-full object-cover block cursor-pointer rounded-2xl" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-3 py-2">Loading image…</div>
                                         ) : m.media_type === "video" ? (
-                                          mediaUrl ? <video src={mediaUrl} controls className="max-w-[260px] max-h-[320px] block rounded-2xl" /> : <div className="text-xs text-white/60 px-4 py-3">Loading video…</div>
+                                          mediaUrl ? <video src={mediaUrl} controls className="max-w-[260px] max-h-[320px] block rounded-2xl" /> : <div className="text-xs text-white/60 px-3 py-2">Loading video…</div>
                                         ) : (
-                                          mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px] px-4 py-3" /> : <div className="text-xs text-white/60 px-4 py-3">Loading audio…</div>
+                                          mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px] px-3 py-2" /> : <div className="text-xs text-white/60 px-3 py-2">Loading audio…</div>
                                         )}
                                       </div>
                                     ) : null}

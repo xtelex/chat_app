@@ -60,3 +60,47 @@ body {
     radial-gradient(closest-side at 80% 20%, rgba(255, 70, 120, 0.22), rgba(255, 70, 120, 0) 58%);
   animation: auroraFloat2 18s ease-in-out infinite;
 }
+
+/* Light mode overrides */
+html.light body,
+html[data-theme="light"] body {
+  background: #f1f5f9 !important;
+}
+
+html.light .bg-gradient-to-b.from-slate-950,
+html[data-theme="light"] .bg-gradient-to-b.from-slate-950 {
+  background: #f1f5f9 !important;
+}
+
+/* Light mode: main app background */
+html[data-theme="light"] [class*="from-slate-950"],
+html[data-theme="light"] [class*="to-black"],
+html[data-theme="light"] [class*="bg-black"] {
+  background-color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] [class*="bg-slate-950"] {
+  background-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] [class*="bg-black/40"],
+html[data-theme="light"] [class*="bg-black/20"],
+html[data-theme="light"] [class*="bg-black/10"] {
+  background-color: rgba(255,255,255,0.8) !important;
+}
+
+html[data-theme="light"] [class*="text-white"]:not([class*="text-white/"]) {
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] [class*="border-white/10"] {
+  border-color: rgba(0,0,0,0.08) !important;
+}
+
+html[data-theme="light"] [class*="bg-white/5"] {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+
+html[data-theme="light"] [class*="bg-white/10"] {
+  background-color: rgba(0,0,0,0.06) !important;
+}
