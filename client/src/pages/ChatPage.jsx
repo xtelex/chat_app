@@ -247,9 +247,12 @@ export default function ChatPage() {
     }
 
     let mounted = true;
+    let sessionLoaded = false;
+
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       const nextSession = data.session ?? null;
+      sessionLoaded = true;
       if (!nextSession) {
         navigate("/login", { replace: true });
         setLoading(false);
@@ -266,7 +269,8 @@ export default function ChatPage() {
       const s = nextSession ?? null;
       setSession(s);
       setUser(s?.user ?? null);
-      if (!s && _event !== "INITIAL_SESSION") {
+      // Only redirect to login on explicit sign out, not on initial null session
+      if (!s && sessionLoaded && _event === "SIGNED_OUT") {
         navigate("/login", { replace: true });
         setLoading(false);
       }

@@ -44,7 +44,10 @@ export default function LoginPage() {
     if (!supabase) return;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/chat` }
+      });
       if (error) setNotice({ type: "error", message: fmt(error) });
     } catch (err) { setNotice({ type: "error", message: fmt(err) }); }
     finally { setLoading(false); }
