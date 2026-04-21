@@ -22,6 +22,8 @@ export default function LoginPage() {
     // Small delay to let Supabase restore session from storage
     const timer = setTimeout(() => {
       supabase.auth.getSession().then(({ data }) => {
+        // eslint-disable-next-line no-console
+        console.log("[Login] existing session:", !!data.session);
         if (data.session) navigate("/chat", { replace: true });
         else setChecking(false);
       });
@@ -56,7 +58,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (authMode === "signin") {
+        // eslint-disable-next-line no-console
+        console.log("[Login] attempting sign in with:", email);
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        // eslint-disable-next-line no-console
+        console.log("[Login] result:", { session: !!data?.session, error: error?.message });
         if (error) { setNotice({ type: "error", message: fmt(error) }); return; }
         if (data?.session) { navigate("/chat", { replace: true }); return; }
         setNotice({ type: "error", message: "Sign in succeeded but no session was created. Please try again." });
