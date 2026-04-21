@@ -266,7 +266,7 @@ export default function ChatPage() {
       const s = nextSession ?? null;
       setSession(s);
       setUser(s?.user ?? null);
-      if (!s) {
+      if (!s && _event !== "INITIAL_SESSION") {
         navigate("/login", { replace: true });
         setLoading(false);
       }
