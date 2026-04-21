@@ -370,7 +370,7 @@ export default function ChatPage() {
           if (msg.recipient_id === user.id) {
             const seenAt = lastSeen[otherId] || 0;
             const msgTime = new Date(msg.created_at).getTime();
-            if (msgTime > seenAt) {
+            if (msgTime > seenAt && !mutedIds.has(otherId)) {
               unreadMap[otherId] = (unreadMap[otherId] || 0) + 1;
             }
           }
@@ -1645,10 +1645,11 @@ export default function ChatPage() {
           ...prev,
           [senderId]: { text: preview, created_at: msg.created_at }
         }));
-        // Only increment unread if this chat isn't currently open
+        // Only increment unread if this chat isn't currently open AND contact isn't muted
         setUnreadCounts((prev) => {
           const currentTarget = dmTargetId;
           if (currentTarget === senderId) return prev;
+          if (mutedIds.has(senderId)) return prev; // muted — suppress badge
           return { ...prev, [senderId]: (prev[senderId] || 0) + 1 };
         });
       })
@@ -2915,6 +2916,7 @@ export default function ChatPage() {
           <div className="flex-1 overflow-y-auto">
             {(() => {
               const filtered = addedContacts.filter((c) => {
+                if (archivedIds.has(c.id)) return false; // always hide archived from sidebar
                 if (sidebarTab === "active") return activeUserIds.has(c.id);
                 if (sidebarTab === "favourite") return favouriteIds.has(c.id);
                 return true;
@@ -3597,9 +3599,9 @@ export default function ChatPage() {
               {addedContacts.length > 0 ? (
                 <div>
                   <div className="px-8 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">
-                    Added Contacts ({addedContacts.length})
+                    Added Contacts ({addedContacts.filter(c => !archivedIds.has(c.id)).length})
                   </div>
-                  {addedContacts.map((contact) => (
+                  {addedContacts.filter(c => !archivedIds.has(c.id)).map((contact) => (
                     <div key={contact.id} className="border-b border-white/10 px-8 py-4 hover:bg-white/5 cursor-pointer transition flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="relative flex-shrink-0">
