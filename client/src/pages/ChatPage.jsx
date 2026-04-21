@@ -1091,25 +1091,55 @@ export default function ChatPage() {
     setHideStatus((prev) => {
       const next = !prev;
       localStorage.setItem("hide_status", String(next));
+      // Stop/start presence tracking based on status visibility
+      if (next && presenceChannelRef.current) {
+        // Hide: untrack presence
+        presenceChannelRef.current.untrack?.().catch?.(() => {});
+      } else if (!next && presenceChannelRef.current) {
+        // Show: re-track presence
+        presenceChannelRef.current.track?.({ online_at: new Date().toISOString() }).catch?.(() => {});
+      }
+      toast.success(next ? "Status hidden from contacts" : "Status now visible");
       return next;
     });
   };
 
   const requestNotifications = async () => {
     if (typeof Notification === "undefined") { toast.error("Notifications not supported in this browser."); return; }
-    if (Notification.permission === "granted") { toast.info("Notifications already enabled."); return; }
+    if (Notification.permission === "granted") {
+      toast.info("Notifications already enabled.");
+      setNotifPermission("granted");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      toast.error("Notifications blocked. Enable them in your browser settings.");
+      return;
+    }
     const result = await Notification.requestPermission();
     setNotifPermission(result);
-    if (result === "granted") toast.success("Notifications enabled.");
-    else toast.error("Notification permission denied.");
+    if (result === "granted") {
+      toast.success("Notifications enabled.");
+      new Notification("My Chat App", { body: "You'll now receive notifications for new messages and calls.", icon: "/favicon.svg" });
+    } else {
+      toast.error("Notification permission denied.");
+    }
   };
 
   const applyTheme = (t) => {
     setTheme(t);
     localStorage.setItem("app_theme", t);
     const root = document.documentElement;
-    if (t === "light") root.classList.add("light");
-    else root.classList.remove("light");
+    if (t === "light") {
+      root.classList.remove("dark");
+      root.classList.add("light");
+    } else if (t === "auto") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.toggle("dark", prefersDark);
+      root.classList.toggle("light", !prefersDark);
+    } else {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    }
     toast.success(`Theme set to ${t}`);
   };
 
@@ -1180,11 +1210,25 @@ export default function ChatPage() {
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
+          // Only track presence if status is not hidden
+          if (!hideStatus) {
+            await channel.track({ online_at: new Date().toISOString() });
+          }
         }
       });
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
+
+  // Apply saved theme on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("app_theme") || "dark";
+    const root = document.documentElement;
+    if (saved === "light") { root.classList.remove("dark"); root.classList.add("light"); }
+    else if (saved === "auto") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.toggle("dark", prefersDark); root.classList.toggle("light", !prefersDark);
+    } else { root.classList.add("dark"); root.classList.remove("light"); }
+  }, []);
 
   // Keep callStateRef in sync; start/stop call timer
   useEffect(() => {
@@ -3052,7 +3096,7 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  <div className="flex-1 overflow-y-auto px-6 py-6 space-y-3">
+                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
                     {dmLoading ? (
                       <div className="text-sm text-white/60">Loading messages…</div>                    ) : dmError ? (
                       <div className="text-sm text-red-200/80 whitespace-pre-line">{dmError}</div>
@@ -3142,15 +3186,15 @@ export default function ChatPage() {
                             ) : (
                               <>
                                 {mine && <ReactionPicker side="right" />}
-                                <div className={`flex flex-col max-w-[70%] ${mine ? "items-end" : "items-start"}`}>
-                                  <div className={`rounded-2xl overflow-hidden text-sm shadow-sm w-full ${m.media_path && !m.text ? "" : `px-4 py-3 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
+                                <div className={`flex flex-col max-w-[65%] ${mine ? "items-end" : "items-start"}`}>
+                                  <div className={`rounded-2xl overflow-hidden text-sm shadow-sm ${m.media_path && !m.text ? "" : `px-4 py-3 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
                                     {m.text ? <div className="whitespace-pre-wrap break-words px-4 pt-3">{m.text}</div> : null}
                                     {m.media_path ? (
                                       <div className={m.text ? "mt-2" : ""}>
                                         {m.media_type === "image" ? (
-                                          mediaUrl ? <img src={mediaUrl} alt="" className="w-full block cursor-pointer" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-4 py-3">Loading image…</div>
+                                          mediaUrl ? <img src={mediaUrl} alt="" className="max-w-[260px] max-h-[320px] w-full object-cover block cursor-pointer rounded-2xl" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-4 py-3">Loading image…</div>
                                         ) : m.media_type === "video" ? (
-                                          mediaUrl ? <video src={mediaUrl} controls className="w-full block" /> : <div className="text-xs text-white/60 px-4 py-3">Loading video…</div>
+                                          mediaUrl ? <video src={mediaUrl} controls className="max-w-[260px] max-h-[320px] block rounded-2xl" /> : <div className="text-xs text-white/60 px-4 py-3">Loading video…</div>
                                         ) : (
                                           mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px] px-4 py-3" /> : <div className="text-xs text-white/60 px-4 py-3">Loading audio…</div>
                                         )}

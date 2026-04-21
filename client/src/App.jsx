@@ -47,9 +47,26 @@ class AppErrorBoundary extends React.Component {
 }
 
 export default function App() {
+  // Apply saved theme on startup
+  React.useEffect(() => {
+    const saved = localStorage.getItem("app_theme") || "dark";
+    const root = document.documentElement;
+    if (saved === "light") {
+      root.classList.remove("dark");
+      root.classList.add("light");
+    } else if (saved === "auto") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.toggle("dark", prefersDark);
+      root.classList.toggle("light", !prefersDark);
+    } else {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    }
+  }, []);
+
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-white text-slate-900">
+      <div className="min-h-screen bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100">
         <Toaster position="top-right" richColors closeButton />
         <AppErrorBoundary>
           <Routes>
