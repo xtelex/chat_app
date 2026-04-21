@@ -125,6 +125,9 @@ export default function AccountPage() {
       );
       if (updateError) throw updateError;
 
+      // Also update profiles table so it persists across sessions
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+
       setUser(updated.user);
       setSuccess("Profile picture updated.");
     } catch (err) {
