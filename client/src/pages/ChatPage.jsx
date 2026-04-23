@@ -141,6 +141,9 @@ export default function ChatPage() {
   // Sticker picker
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const stickerPickerRef = useRef(null);
+  const customStickerInputRef = useRef(null);
+  const [customStickers, setCustomStickers] = useState([]);
+  const [uploadingSticker, setUploadingSticker] = useState(false);
 
   // Message reactions: { [messageId]: { [emoji]: [userId, ...] } }
   const [reactions, setReactions] = useState({});
@@ -893,6 +896,117 @@ export default function ChatPage() {
       setDmMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       toast.error(String(err?.message || "Failed to send sticker"));
     }
+  };
+
+  // Load custom stickers from database
+  const loadCustomStickers = async () => {
+    if (!supabase || !user?.id) return;
+    
+    const { data, error } = await supabase
+      .from("user_stickers")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    
+    if (!error && Array.isArray(data)) {
+      setCustomStickers(data);
+    }
+  };
+
+  // Upload custom sticker
+  const handleUploadCustomSticker = async (file) => {
+    if (!file) return;
+    if (!supabase || !user?.id) {
+      toast.error("Supabase is not configured.");
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be smaller than 5MB.");
+      return;
+    }
+
+    setUploadingSticker(true);
+    try {
+      // Upload to Supabase Storage
+      const ext = file.name.split(".").pop() || "png";
+      const path = `stickers/${user.id}/${crypto.randomUUID()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("chat-media")
+        .upload(path, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (uploadError) throw new Error(uploadError.message);
+
+      // Save to database
+      const { data, error: dbError } = await supabase
+        .from("user_stickers")
+        .insert({
+          user_id: user.id,
+          name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+          storage_path: path,
+          emoji_fallback: "🎨"
+        })
+        .select()
+        .single();
+
+      if (dbError) throw new Error(dbError.message);
+
+      // Add to local state
+      setCustomStickers((prev) => [data, ...prev]);
+      toast.success("Sticker added!");
+    } catch (err) {
+      toast.error(String(err?.message || "Failed to upload sticker"));
+    } finally {
+      setUploadingSticker(false);
+    }
+  };
+
+  // Delete custom sticker
+  const handleDeleteCustomSticker = async (stickerId, storagePath) => {
+    if (!supabase || !user?.id) return;
+
+    try {
+      // Delete from storage
+      await supabase.storage.from("chat-media").remove([storagePath]);
+
+      // Delete from database
+      const { error } = await supabase
+        .from("user_stickers")
+        .delete()
+        .eq("id", stickerId)
+        .eq("user_id", user.id);
+
+      if (error) throw new Error(error.message);
+
+      // Remove from local state
+      setCustomStickers((prev) => prev.filter((s) => s.id !== stickerId));
+      toast.success("Sticker deleted");
+    } catch (err) {
+      toast.error(String(err?.message || "Failed to delete sticker"));
+    }
+  };
+
+  // Get signed URL for custom sticker
+  const getCustomStickerUrl = async (storagePath) => {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase.storage
+      .from("chat-media")
+      .createSignedUrl(storagePath, 60 * 60 * 24); // 24 hours
+
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
   };
 
   const handleToggleRecording = async () => {
