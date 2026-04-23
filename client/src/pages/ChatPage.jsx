@@ -144,6 +144,7 @@ export default function ChatPage() {
   const customStickerInputRef = useRef(null);
   const [customStickers, setCustomStickers] = useState([]);
   const [uploadingSticker, setUploadingSticker] = useState(false);
+  const [customStickerUrls, setCustomStickerUrls] = useState({}); // { stickerId: signedUrl }
 
   // Message reactions: { [messageId]: { [emoji]: [userId, ...] } }
   const [reactions, setReactions] = useState({});
@@ -917,6 +918,16 @@ export default function ChatPage() {
     
     if (!error && Array.isArray(data)) {
       setCustomStickers(data);
+      
+      // Load signed URLs for each sticker
+      const urls = {};
+      for (const sticker of data) {
+        const signedUrl = await getCustomStickerUrl(sticker.storage_path);
+        if (signedUrl) {
+          urls[sticker.id] = signedUrl;
+        }
+      }
+      setCustomStickerUrls(urls);
     }
   };
 
@@ -944,7 +955,7 @@ export default function ChatPage() {
     try {
       // Upload to Supabase Storage
       const ext = file.name.split(".").pop() || "png";
-      const path = `stickers/${user.id}/${crypto.randomUUID()}.${ext}`;
+      const path = `user-stickers/${user.id}/${crypto.randomUUID()}.${ext}`;
       
       const { error: uploadError } = await supabase.storage
         .from("chat-media")
@@ -971,6 +982,13 @@ export default function ChatPage() {
 
       // Add to local state
       setCustomStickers((prev) => [data, ...prev]);
+      
+      // Get signed URL for the new sticker
+      const signedUrl = await getCustomStickerUrl(path);
+      if (signedUrl) {
+        setCustomStickerUrls((prev) => ({ ...prev, [data.id]: signedUrl }));
+      }
+      
       toast.success("Sticker added!");
     } catch (err) {
       toast.error(String(err?.message || "Failed to upload sticker"));
@@ -998,6 +1016,11 @@ export default function ChatPage() {
 
       // Remove from local state
       setCustomStickers((prev) => prev.filter((s) => s.id !== stickerId));
+      setCustomStickerUrls((prev) => {
+        const newUrls = { ...prev };
+        delete newUrls[stickerId];
+        return newUrls;
+      });
       toast.success("Sticker deleted");
     } catch (err) {
       toast.error(String(err?.message || "Failed to delete sticker"));
@@ -3686,22 +3709,34 @@ export default function ChatPage() {
                               <div className="mt-4 pt-4 border-t border-white/10">
                                 <h4 className="text-xs font-semibold text-white/60 mb-2">My Stickers</h4>
                                 <div className="grid grid-cols-4 gap-2">
-                                  {customStickers.map((sticker) => (
+                                  {customStickers.map((sticker) => {
+                                    const stickerUrl = customStickerUrls[sticker.id];
+                                    return (
                                     <div key={sticker.id} className="relative group aspect-square">
                                       <button
                                         type="button"
                                         onClick={async () => {
-                                          const url = await getCustomStickerUrl(sticker.storage_path);
+                                          const url = customStickerUrls[sticker.id] || await getCustomStickerUrl(sticker.storage_path);
                                           if (url) handleSendSticker(url);
                                         }}
                                         className="w-full h-full rounded-xl hover:bg-white/10 transition-all hover:scale-110 p-2 flex items-center justify-center"
                                         title={sticker.name}
                                       >
-                                        <img 
-                                          src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/chat-media/${sticker.storage_path}`}
-                                          alt={sticker.name}
-                                          className="w-full h-full object-contain"
-                                        />
+                                        {stickerUrl ? (
+                                          <img 
+                                            src={stickerUrl}
+                                            alt={sticker.name}
+                                            className="w-full h-full object-contain"
+                                            onError={(e) => {
+                                              e.target.style.display = 'none';
+                                              e.target.parentElement.innerHTML = `<span class="text-2xl">${sticker.emoji_fallback || '🎨'}</span>`;
+                                            }}
+                                          />
+                                        ) : (
+                                          <div className="animate-pulse bg-white/10 w-full h-full rounded-lg flex items-center justify-center">
+                                            <span className="text-2xl">{sticker.emoji_fallback || '🎨'}</span>
+                                          </div>
+                                        )}
                                       </button>
                                       <button
                                         type="button"
@@ -3716,7 +3751,8 @@ export default function ChatPage() {
                                         <X className="h-3 w-3" />
                                       </button>
                                     </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
