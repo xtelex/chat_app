@@ -556,27 +556,34 @@ export default function ChatPage() {
     if (!contactId || !user?.id) return;
     if (demoMode) return;
 
+    console.log('[Read Receipts] Marking messages as read for contact:', contactId);
+
     // Try backend first
     if (session?.access_token) {
       try {
-        await fetch(`${apiBaseUrl}/api/dm/${encodeURIComponent(contactId)}/read`, {
+        const res = await fetch(`${apiBaseUrl}/api/dm/${encodeURIComponent(contactId)}/read`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${session.access_token}` }
         });
+        const data = await res.json();
+        console.log('[Read Receipts] Backend response:', data);
         return;
-      } catch {
+      } catch (err) {
+        console.log('[Read Receipts] Backend failed, falling back to Supabase:', err.message);
         // Fall through to Supabase
       }
     }
 
     // Fallback to direct Supabase update
     if (supabase) {
-      await supabase
+      const { data, error } = await supabase
         .from("direct_messages")
         .update({ read_at: new Date().toISOString() })
         .eq("sender_id", contactId)
         .eq("recipient_id", user.id)
         .is("read_at", null);
+      
+      console.log('[Read Receipts] Supabase update result:', { data, error });
     }
   };
 
@@ -1710,11 +1717,13 @@ export default function ChatPage() {
         { event: "UPDATE", schema: "public", table: "direct_messages" },
         (payload) => {
           const msg = payload.new;
+          console.log('[Read Receipts] Real-time UPDATE received:', msg);
           if (!msg) return;
           const isRelevant =
             (msg.sender_id === user.id && msg.recipient_id === dmTargetId) ||
             (msg.sender_id === dmTargetId && msg.recipient_id === user.id);
           if (!isRelevant) return;
+          console.log('[Read Receipts] Updating message read status:', { id: msg.id, read_at: msg.read_at });
           // Update read status in real-time
           setDmMessages((prev) => 
             prev.map((m) => m.id === msg.id ? { ...m, read_at: msg.read_at, delivered_at: msg.delivered_at } : m)
@@ -3302,19 +3311,19 @@ export default function ChatPage() {
                                   </div>
                                   {/* Read receipt indicator for sent messages */}
                                   {mine && (
-                                    <div className="flex items-center gap-1 mt-0.5 px-1">
-                                      <span className="text-[10px] text-white/40">
+                                    <div className="flex items-center gap-1.5 mt-1 px-1">
+                                      <span className="text-[11px] text-white/50">
                                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </span>
                                       {m.read_at ? (
-                                        <div className="flex items-center gap-0.5" title={`Read ${new Date(m.read_at).toLocaleString()}`}>
-                                          <Check className="h-3 w-3 text-blue-400" />
-                                          <Check className="h-3 w-3 text-blue-400 -ml-2" />
+                                        <div className="flex items-center" title={`Read ${new Date(m.read_at).toLocaleString()}`}>
+                                          <Check className="h-3.5 w-3.5 text-blue-400 stroke-[2.5]" />
+                                          <Check className="h-3.5 w-3.5 text-blue-400 stroke-[2.5] -ml-2.5" />
                                         </div>
                                       ) : (
-                                        <div className="flex items-center gap-0.5" title="Delivered">
-                                          <Check className="h-3 w-3 text-white/40" />
-                                          <Check className="h-3 w-3 text-white/40 -ml-2" />
+                                        <div className="flex items-center" title="Delivered">
+                                          <Check className="h-3.5 w-3.5 text-white/50 stroke-[2.5]" />
+                                          <Check className="h-3.5 w-3.5 text-white/50 stroke-[2.5] -ml-2.5" />
                                         </div>
                                       )}
                                     </div>
