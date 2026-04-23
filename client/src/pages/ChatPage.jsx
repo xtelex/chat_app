@@ -4009,46 +4009,46 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar with Message Input - All in one line */}
-                        <div className="flex items-center justify-center gap-2">
+                        {/* Action Toolbar with Message Input - Compact */}
+                        <div className="flex items-center gap-2">
                           {/* Attachments - Plus */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
+                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Attachments"
                           >
-                            <Plus className="h-6 w-6" />
+                            <Plus className="h-5 w-5" />
                           </button>
                           
                           {/* Camera */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
+                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Camera"
                           >
-                            <Camera className="h-6 w-6" />
+                            <Camera className="h-5 w-5" />
                           </button>
                           
                           {/* Photos - Image */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
+                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Photos"
                           >
-                            <Image className="h-6 w-6" />
+                            <Image className="h-5 w-5" />
                           </button>
                           
                           {/* Voice - Microphone */}
                           <button
                             type="button"
                             onClick={handleToggleRecording}
-                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
+                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Voice message"
                           >
-                            <Mic className="h-6 w-6" />
+                            <Mic className="h-5 w-5" />
                           </button>
 
                           {/* Message Input */}
@@ -4056,7 +4056,7 @@ export default function ChatPage() {
                             <textarea
                               value={messageText}
                               onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
-                              placeholder={recording ? "Recording voice…" : "Message"}
+                              placeholder="Message"
                               rows={1}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) {
@@ -4065,36 +4065,21 @@ export default function ChatPage() {
                                 }
                               }}
                               onFocus={(e) => {
-                                // Scroll input into view when keyboard opens (mobile)
                                 setTimeout(() => {
                                   e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                 }, 300);
                               }}
-                              className="w-full resize-none rounded-2xl border border-white/10 bg-white/10 px-4 py-3 pr-20 text-sm md:text-base text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
-                              style={{ fontSize: '16px' }} // Prevents iOS zoom on focus
+                              className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[40px]"
+                              style={{ fontSize: '16px' }}
                             />
                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setShowStickerPicker((v) => !v);
-                                  setShowEmojiPicker(false);
-                                }}
-                                className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
-                                title="Stickers"
-                              >
-                                <Sticker className="h-5 w-5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowEmojiPicker((v) => !v);
-                                  setShowStickerPicker(false);
-                                }}
-                                className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
+                                onClick={() => setShowEmojiPicker((v) => !v)}
+                                className="p-1 text-white/50 hover:text-white/80 transition"
                                 title="Emoji"
                               >
-                                <Smile className="h-5 w-5" />
+                                <Smile className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
@@ -4105,10 +4090,10 @@ export default function ChatPage() {
                             onClick={handleSendDirectText}
                             whileTap={{ scale: 0.96 }}
                             disabled={!messageText.trim()}
-                            className="inline-flex items-center justify-center rounded-full bg-red-500 p-3 min-w-[44px] min-h-[44px] text-white hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed active:bg-red-700 flex-shrink-0"
+                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
                             title="Send"
                           >
-                            <Smile className="h-6 w-6" />
+                            <Smile className="h-5 w-5" />
                           </motion.button>
                         </div>
                       </div>
