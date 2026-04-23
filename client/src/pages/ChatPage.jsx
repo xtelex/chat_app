@@ -2129,15 +2129,20 @@ export default function ChatPage() {
     typingTimeoutRef.current = setTimeout(() => {}, 2000);
   };
 
-  // Clear unread when opening a chat + save last-seen timestamp
+  // Clear unread when opening a chat + save last-seen timestamp + mark messages as read
   useEffect(() => {
     if (!dmTargetId || !user?.id) return;
+    
+    console.log('[Read Receipts] Chat opened, marking messages as read for:', dmTargetId);
+    
+    // Clear unread badge
     setUnreadCounts((prev) => {
       if (!prev[dmTargetId]) return prev;
       const next = { ...prev };
       delete next[dmTargetId];
       return next;
     });
+    
     // Persist last-seen so unread counts survive page reload
     try {
       const key = `last_seen_${user.id}`;
@@ -2145,6 +2150,44 @@ export default function ChatPage() {
       stored[dmTargetId] = Date.now();
       localStorage.setItem(key, JSON.stringify(stored));
     } catch {}
+    
+    // Mark messages as read when opening chat
+    markMessagesAsReadForContact(dmTargetId);
+    
+    // Mark messages as read when page becomes visible (user returns to app)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && dmTargetId) {
+        console.log('[Read Receipts] Page became visible, marking messages as read');
+        markMessagesAsReadForContact(dmTargetId);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also mark as read on focus (for iOS Safari)
+    const handleFocus = () => {
+      if (dmTargetId) {
+        console.log('[Read Receipts] Window focused, marking messages as read');
+        markMessagesAsReadForContact(dmTargetId);
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Periodic check to mark messages as read (every 5 seconds while chat is open)
+    // This ensures messages get marked even if initial call fails
+    const intervalId = setInterval(() => {
+      if (!document.hidden && dmTargetId) {
+        console.log('[Read Receipts] Periodic check, marking messages as read');
+        markMessagesAsReadForContact(dmTargetId);
+      }
+    }, 5000);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(intervalId);
+    };
   }, [dmTargetId, user?.id]);
 
   useEffect(() => {
