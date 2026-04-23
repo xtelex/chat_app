@@ -3482,10 +3482,10 @@ export default function ChatPage() {
                   <div className="flex flex-col min-w-0">
                   {/* Chat header - responsive layout */}
                   <div className="border-b border-white/10 bg-black/10 px-4 md:px-6 py-3 md:py-4">
-                    {/* Mobile layout (< 768px) */}
-                    <div className="flex md:hidden flex-col gap-3">
+                    {/* Mobile layout (< 768px) - Two rows */}
+                    <div className="md:hidden">
                       {/* Row 1: Back button and action buttons */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-3">
                         <button
                           type="button"
                           onClick={handleCloseDm}
@@ -3545,7 +3545,7 @@ export default function ChatPage() {
                       </div>
                     </div>
                     
-                    {/* Desktop layout (>= 768px) */}
+                    {/* Desktop layout (>= 768px) - Single row */}
                     <div className="hidden md:flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-4">
                         <button
