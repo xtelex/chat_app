@@ -8,32 +8,32 @@ export const stickerPacks = [
     stickers: [
       {
         id: 'sticker-1',
-        name: 'Surprised Face',
-        url: '/stickers/sticker-1.png',
+        name: 'Image',
+        url: '/stickers/image-removebg-preview.png',
         emoji: '😮'
       },
       {
         id: 'sticker-2',
-        name: 'Flex',
-        url: '/stickers/sticker-2.png',
+        name: 'Coco',
+        url: '/stickers/coco-removebg-preview.png',
         emoji: '💪'
       },
       {
         id: 'sticker-3',
-        name: 'Call Me',
-        url: '/stickers/sticker-3.png',
+        name: 'Alden',
+        url: '/stickers/alden-removebg-preview.png',
         emoji: '🤙'
       },
       {
         id: 'sticker-4',
-        name: 'Crazy Face',
-        url: '/stickers/sticker-4.png',
+        name: 'Malupiton',
+        url: '/stickers/malupiton-removebg-preview.png',
         emoji: '🤪'
       },
       {
         id: 'sticker-5',
         name: 'Thank You',
-        url: '/stickers/sticker-5.png',
+        url: '/stickers/034.png',
         emoji: '🙏'
       }
     ]
