@@ -29,7 +29,7 @@ export async function getDirectMessages(req, res) {
 
   const { data, error } = await supabase
     .from("direct_messages")
-    .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
+    .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime, delivered_at, read_at")
     .or(
       `and(sender_id.eq.${userId},recipient_id.eq.${contactId}),and(sender_id.eq.${contactId},recipient_id.eq.${userId})`
     )
@@ -76,7 +76,7 @@ export async function postDirectMessage(req, res) {
   const { data, error } = await supabase
     .from("direct_messages")
     .insert(payload)
-    .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
+    .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime, delivered_at, read_at")
     .single();
 
   if (error) {
@@ -84,5 +84,34 @@ export async function postDirectMessage(req, res) {
   }
 
   return res.status(201).json({ message: data });
+}
+
+export async function markMessagesAsRead(req, res) {
+  const contactId = (req.params.contactId ?? "").toString().trim();
+  if (!contactId) return res.status(400).json({ message: "contactId is required" });
+
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  const supabase = getClient(req, res);
+  if (!supabase) return;
+
+  // Mark all unread messages from this contact as read
+  const { data, error } = await supabase
+    .from("direct_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("sender_id", contactId)
+    .eq("recipient_id", userId)
+    .is("read_at", null)
+    .select("id");
+
+  if (error) {
+    return res.status(500).json({ message: error.message });
+  }
+
+  return res.json({ 
+    success: true, 
+    markedCount: data?.length || 0 
+  });
 }
 

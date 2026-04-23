@@ -552,6 +552,34 @@ export default function ChatPage() {
     setShowProfilePanel(false);
   };
 
+  const markMessagesAsReadForContact = async (contactId) => {
+    if (!contactId || !user?.id) return;
+    if (demoMode) return;
+
+    // Try backend first
+    if (session?.access_token) {
+      try {
+        await fetch(`${apiBaseUrl}/api/dm/${encodeURIComponent(contactId)}/read`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+        return;
+      } catch {
+        // Fall through to Supabase
+      }
+    }
+
+    // Fallback to direct Supabase update
+    if (supabase) {
+      await supabase
+        .from("direct_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("sender_id", contactId)
+        .eq("recipient_id", user.id)
+        .is("read_at", null);
+    }
+  };
+
   const loadDirectMessages = async (contactId) => {
     if (!contactId) return;
     if (demoMode) return;
@@ -598,7 +626,7 @@ export default function ChatPage() {
     try {
       const { data, error } = await supabase
         .from("direct_messages")
-        .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
+        .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime, delivered_at, read_at")
         .or(
           `and(sender_id.eq.${user.id},recipient_id.eq.${contactId}),and(sender_id.eq.${contactId},recipient_id.eq.${user.id})`
         )
@@ -609,6 +637,8 @@ export default function ChatPage() {
         setDmMessages(enrichCallMessages(data, contactId));
         setDmError(null);
         setDmLoading(false);
+        // Mark messages as read after loading
+        markMessagesAsReadForContact(contactId);
         return;
       }
 
@@ -1669,6 +1699,26 @@ export default function ChatPage() {
               : msg;
             return [...prev, enriched];
           });
+          // Auto-mark as read if this is the active chat and message is from the other person
+          if (msg.sender_id === dmTargetId && msg.recipient_id === user.id) {
+            markMessagesAsReadForContact(dmTargetId);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "direct_messages" },
+        (payload) => {
+          const msg = payload.new;
+          if (!msg) return;
+          const isRelevant =
+            (msg.sender_id === user.id && msg.recipient_id === dmTargetId) ||
+            (msg.sender_id === dmTargetId && msg.recipient_id === user.id);
+          if (!isRelevant) return;
+          // Update read status in real-time
+          setDmMessages((prev) => 
+            prev.map((m) => m.id === msg.id ? { ...m, read_at: msg.read_at, delivered_at: msg.delivered_at } : m)
+          );
         }
       )
       .subscribe();
@@ -3250,6 +3300,25 @@ export default function ChatPage() {
                                       </div>
                                     ) : null}
                                   </div>
+                                  {/* Read receipt indicator for sent messages */}
+                                  {mine && (
+                                    <div className="flex items-center gap-1 mt-0.5 px-1">
+                                      <span className="text-[10px] text-white/40">
+                                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                      {m.read_at ? (
+                                        <div className="flex items-center gap-0.5" title={`Read ${new Date(m.read_at).toLocaleString()}`}>
+                                          <Check className="h-3 w-3 text-blue-400" />
+                                          <Check className="h-3 w-3 text-blue-400 -ml-2" />
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-0.5" title="Delivered">
+                                          <Check className="h-3 w-3 text-white/40" />
+                                          <Check className="h-3 w-3 text-white/40 -ml-2" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                   {hasReactions && (
                                     <div className={`flex flex-wrap gap-1 mt-1 ${mine ? "justify-end" : "justify-start"}`}>
                                       {Object.entries(msgReactions).map(([emoji, users]) => (
