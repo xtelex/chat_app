@@ -4007,23 +4007,23 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar - Above message input */}
-                        <div className="flex items-center justify-start gap-3 mb-4 pb-4 border-b border-white/10 overflow-x-auto">
+                        {/* Action Toolbar - Compact bottom toolbar */}
+                        <div className="flex items-center justify-center gap-4 mb-4 pb-4">
                           {/* Attachments */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-pink-500/50 transition transform hover:scale-110"
+                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
                             title="Attachments"
                           >
-                            <Plus className="h-8 w-8" />
+                            <Plus className="h-6 w-6" />
                           </button>
                           
                           {/* Camera */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110"
+                            className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
                             title="Camera"
                           >
                             📷
@@ -4033,7 +4033,7 @@ export default function ChatPage() {
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-blue-500/50 transition transform hover:scale-110"
+                            className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
                             title="Photos"
                           >
                             🖼️
@@ -4043,30 +4043,10 @@ export default function ChatPage() {
                           <button
                             type="button"
                             onClick={handleToggleRecording}
-                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-purple-500/50 transition transform hover:scale-110"
+                            className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
                             title="Voice message"
                           >
                             🎤
-                          </button>
-                          
-                          {/* Emoji */}
-                          <button
-                            type="button"
-                            onClick={() => setShowEmojiPicker((v) => !v)}
-                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-yellow-500/50 transition transform hover:scale-110"
-                            title="Emoji"
-                          >
-                            😊
-                          </button>
-                          
-                          {/* Stickers */}
-                          <button
-                            type="button"
-                            onClick={() => setShowStickerPicker((v) => !v)}
-                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-green-500/50 transition transform hover:scale-110"
-                            title="Stickers"
-                          >
-                            🍄
                           </button>
                         </div>
 
