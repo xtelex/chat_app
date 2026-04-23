@@ -39,10 +39,12 @@ import {
   Archive,
   EyeOff,
   MessageCircle,
-  PhoneCall as PhoneCallIcon
+  PhoneCall as PhoneCallIcon,
+  Sticker
 } from "lucide-react";
 
 import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
+import { getAllStickers } from "../data/stickers.js";
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -135,6 +137,10 @@ export default function ChatPage() {
   // Emoji picker
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef(null);
+
+  // Sticker picker
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const stickerPickerRef = useRef(null);
 
   // Message reactions: { [messageId]: { [emoji]: [userId, ...] } }
   const [reactions, setReactions] = useState({});
@@ -818,6 +824,77 @@ export default function ChatPage() {
     }
   };
 
+  const handleSendSticker = async (stickerUrl) => {
+    if (!dmTargetId) return;
+    if (blockedIds.has(dmTargetId) || blockedByIds.has(dmTargetId)) return;
+    if (demoMode || !user?.id) return;
+
+    const optimistic = {
+      id: `local-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      sender_id: user.id,
+      recipient_id: dmTargetId,
+      text: `[sticker:${stickerUrl}]`,
+      media_path: null,
+      media_type: "sticker",
+      media_mime: null
+    };
+
+    setShowStickerPicker(false);
+    setDmMessages((prev) => [...prev, optimistic]);
+
+    try {
+      let backendError = null;
+
+      if (session?.access_token) {
+        try {
+          const res = await fetch(`${apiBaseUrl}/api/dm/${encodeURIComponent(dmTargetId)}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ text: `[sticker:${stickerUrl}]` })
+          });
+
+          if (res.ok) {
+            const body = await res.json().catch(() => ({}));
+            const saved = body?.message;
+            if (saved?.id) {
+              setDmMessages((prev) => prev.map((m) => (m.id === optimistic.id ? { ...saved, media_type: "sticker" } : m)));
+            }
+            return;
+          }
+
+          const body = await res.json().catch(() => ({}));
+          backendError = new Error(body.message || `Failed to send sticker (${res.status})`);
+        } catch (err) {
+          backendError = err;
+        }
+      }
+
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("direct_messages")
+          .insert({ sender_id: user.id, recipient_id: dmTargetId, text: `[sticker:${stickerUrl}]` })
+          .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
+          .single();
+
+        if (!error && data?.id) {
+          setDmMessages((prev) => prev.map((m) => (m.id === optimistic.id ? { ...data, media_type: "sticker" } : m)));
+          return;
+        }
+
+        if (error) throw new Error(error.message);
+      } else if (backendError) {
+        throw backendError;
+      }
+    } catch (err) {
+      setDmMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      toast.error(String(err?.message || "Failed to send sticker"));
+    }
+  };
+
   const handleToggleRecording = async () => {
     if (recording) {
       try {
@@ -924,10 +1001,13 @@ export default function ChatPage() {
 
   // ── Emoji picker close on outside click ──────────────────────────────────────
   useEffect(() => {
-    if (!showEmojiPicker && !reactionPickerMsgId && !showNotifications) return;
+    if (!showEmojiPicker && !showStickerPicker && !reactionPickerMsgId && !showNotifications) return;
     const handler = (e) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
         setShowEmojiPicker(false);
+      }
+      if (stickerPickerRef.current && !stickerPickerRef.current.contains(e.target)) {
+        setShowStickerPicker(false);
       }
       if (reactionPickerRef.current && !reactionPickerRef.current.contains(e.target)) {
         setReactionPickerMsgId(null);
@@ -939,7 +1019,7 @@ export default function ChatPage() {
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showEmojiPicker, reactionPickerMsgId, showNotifications]);
+  }, [showEmojiPicker, showStickerPicker, reactionPickerMsgId, showNotifications]);
 
   // ── Message reactions ────────────────────────────────────────────────────────
   const handleReact = async (messageId, emoji) => {
@@ -3295,20 +3375,41 @@ export default function ChatPage() {
                               <>
                                 {mine && <ReactionPicker side="right" />}
                                 <div className={`flex flex-col max-w-[65%] ${mine ? "items-end" : "items-start"}`}>
-                                  <div className={`rounded-2xl overflow-hidden text-sm shadow-sm ${m.media_path && !m.text ? "" : `px-3 py-2 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
-                                    {m.text ? <div className="whitespace-pre-wrap break-words">{m.text}</div> : null}
-                                    {m.media_path ? (
-                                      <div className={m.text ? "mt-2" : ""}>
-                                        {m.media_type === "image" ? (
-                                          mediaUrl ? <img src={mediaUrl} alt="" className="max-w-[260px] max-h-[320px] w-full object-cover block cursor-pointer rounded-2xl" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-3 py-2">Loading image…</div>
-                                        ) : m.media_type === "video" ? (
-                                          mediaUrl ? <video src={mediaUrl} controls className="max-w-[260px] max-h-[320px] block rounded-2xl" /> : <div className="text-xs text-white/60 px-3 py-2">Loading video…</div>
-                                        ) : (
-                                          mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px] px-3 py-2" /> : <div className="text-xs text-white/60 px-3 py-2">Loading audio…</div>
-                                        )}
-                                      </div>
-                                    ) : null}
-                                  </div>
+                                  {/* Sticker message */}
+                                  {(m.media_type === "sticker" || m.text?.startsWith("[sticker:")) ? (
+                                    <div className="bg-transparent">
+                                      <img 
+                                        src={m.text?.match(/\[sticker:(.*?)\]/)?.[1] || m.text}
+                                        alt="Sticker"
+                                        className="w-32 h-32 object-contain cursor-pointer hover:scale-110 transition-transform"
+                                        onClick={() => {
+                                          const url = m.text?.match(/\[sticker:(.*?)\]/)?.[1] || m.text;
+                                          window.open(url, "_blank");
+                                        }}
+                                        onError={(e) => {
+                                          // Fallback if sticker image fails to load
+                                          e.target.style.display = 'none';
+                                          e.target.parentElement.innerHTML = '<div class="text-4xl">🖼️</div>';
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    /* Regular text/media message */
+                                    <div className={`rounded-2xl overflow-hidden text-sm shadow-sm ${m.media_path && !m.text ? "" : `px-3 py-2 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
+                                      {m.text && !m.text.startsWith("[sticker:") ? <div className="whitespace-pre-wrap break-words">{m.text}</div> : null}
+                                      {m.media_path ? (
+                                        <div className={m.text ? "mt-2" : ""}>
+                                          {m.media_type === "image" ? (
+                                            mediaUrl ? <img src={mediaUrl} alt="" className="max-w-[260px] max-h-[320px] w-full object-cover block cursor-pointer rounded-2xl" onClick={() => window.open(mediaUrl, "_blank")} /> : <div className="text-xs text-white/60 px-3 py-2">Loading image…</div>
+                                          ) : m.media_type === "video" ? (
+                                            mediaUrl ? <video src={mediaUrl} controls className="max-w-[260px] max-h-[320px] block rounded-2xl" /> : <div className="text-xs text-white/60 px-3 py-2">Loading video…</div>
+                                          ) : (
+                                            mediaUrl ? <audio src={mediaUrl} controls className="w-full min-w-[180px] px-3 py-2" /> : <div className="text-xs text-white/60 px-3 py-2">Loading audio…</div>
+                                          )}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  )}
                                   {/* Read receipt indicator for sent messages */}
                                   {mine && (
                                     <div className="flex items-center gap-1.5 mt-1 px-1">
@@ -3404,6 +3505,40 @@ export default function ChatPage() {
 
                     <div className="flex items-end gap-3">
                       <div className="flex-1 relative">
+                        {/* Sticker picker */}
+                        {showStickerPicker && (
+                          <div
+                            ref={stickerPickerRef}
+                            className="absolute bottom-12 left-0 z-20 bg-slate-800 border border-white/10 rounded-2xl p-4 shadow-xl w-80"
+                          >
+                            <h3 className="text-sm font-semibold text-white/80 mb-3">Stickers</h3>
+                            <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                              {getAllStickers().map((sticker) => (
+                                <button
+                                  key={sticker.id}
+                                  type="button"
+                                  onClick={() => handleSendSticker(sticker.url)}
+                                  className="aspect-square rounded-xl hover:bg-white/10 transition-all hover:scale-110 p-2 flex items-center justify-center"
+                                  title={sticker.name}
+                                >
+                                  <img 
+                                    src={sticker.url} 
+                                    alt={sticker.name}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      // Fallback to emoji if image fails to load
+                                      e.target.style.display = 'none';
+                                      e.target.parentElement.innerHTML = `<span class="text-4xl">${sticker.emoji}</span>`;
+                                    }}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                            <p className="text-xs text-white/40 mt-3 text-center">
+                              Add your sticker images to <code className="bg-white/10 px-1 rounded">client/public/stickers/</code>
+                            </p>
+                          </div>
+                        )}
                         {/* Emoji picker */}
                         {showEmojiPicker && (
                           <div
@@ -3447,16 +3582,32 @@ export default function ChatPage() {
                               handleSendDirectText();
                             }
                           }}
-                          className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-sm text-white placeholder-white/40 outline-none focus:bg-white/10 focus:border-white/20"
+                          className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-sm text-white placeholder-white/40 outline-none focus:bg-white/10 focus:border-white/20"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowEmojiPicker((v) => !v)}
-                          className="absolute right-3 bottom-3 text-white/40 hover:text-white/80 transition"
-                          title="Emoji"
-                        >
-                          <Smile className="h-5 w-5" />
-                        </button>
+                        <div className="absolute right-3 bottom-3 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowStickerPicker((v) => !v);
+                              setShowEmojiPicker(false);
+                            }}
+                            className="text-white/40 hover:text-white/80 transition"
+                            title="Stickers"
+                          >
+                            <Sticker className="h-5 w-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowEmojiPicker((v) => !v);
+                              setShowStickerPicker(false);
+                            }}
+                            className="text-white/40 hover:text-white/80 transition"
+                            title="Emoji"
+                          >
+                            <Smile className="h-5 w-5" />
+                          </button>
+                        </div>
                       </div>
 
                       <motion.button
