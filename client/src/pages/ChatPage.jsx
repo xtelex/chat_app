@@ -4008,6 +4008,58 @@ export default function ChatPage() {
                           </div>
                         )}
                         <div className="relative">
+                          {/* Action toolbar - visible on mobile */}
+                          <div className="md:hidden flex items-center gap-2 mb-3 pb-3 border-b border-white/10 overflow-x-auto">
+                            <button
+                              type="button"
+                              onClick={() => dmFileInputRef.current?.click()}
+                              className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-500 flex items-center justify-center text-white hover:shadow-lg hover:shadow-pink-500/50 transition"
+                              title="Attachments"
+                            >
+                              <Plus className="h-6 w-6" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => dmFileInputRef.current?.click()}
+                              className="flex-shrink-0 h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30 transition"
+                              title="Camera"
+                            >
+                              📷
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => dmFileInputRef.current?.click()}
+                              className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500/30 transition"
+                              title="Photos"
+                            >
+                              🖼️
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleToggleRecording}
+                              className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition"
+                              title="Voice message"
+                            >
+                              🎤
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowEmojiPicker((v) => !v)}
+                              className="flex-shrink-0 h-12 w-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 hover:bg-yellow-500/30 transition"
+                              title="Emoji"
+                            >
+                              😊
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowStickerPicker((v) => !v)}
+                              className="flex-shrink-0 h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 hover:bg-green-500/30 transition"
+                              title="Stickers"
+                            >
+                              🍄
+                            </button>
+                          </div>
+
                           <textarea
                             value={messageText}
                             onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
