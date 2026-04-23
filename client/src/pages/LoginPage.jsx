@@ -150,22 +150,71 @@ export default function LoginPage() {
         }} />
       </div>
 
-      <div className="w-full max-w-sm relative z-10">
-        {/* Logo + title */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-2xl shadow-pink-500/40 mb-4 ring-1 ring-white/20">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-10 w-10">
-              <path d="M8 18a4 4 0 0 1 4-4h40a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H38l-6 7-6-7H12a4 4 0 0 1-4-4V18z" fill="white" opacity="0.95"/>
-              <circle cx="22" cy="28" r="3" fill="#ec4899"/>
-              <circle cx="32" cy="28" r="3" fill="#ec4899"/>
-              <circle cx="42" cy="28" r="3" fill="#ec4899"/>
-            </svg>
+      <div className="w-full h-full flex items-center justify-center relative z-10">
+        <div className="w-full max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left side - Branding */}
+          <div className="hidden lg:flex flex-col justify-center items-start">
+            <div className="mb-8">
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-2xl shadow-pink-500/40 mb-6 ring-1 ring-white/20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-12 w-12">
+                  <path d="M8 18a4 4 0 0 1 4-4h40a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H38l-6 7-6-7H12a4 4 0 0 1-4-4V18z" fill="white" opacity="0.95"/>
+                  <circle cx="22" cy="28" r="3" fill="#ec4899"/>
+                  <circle cx="32" cy="28" r="3" fill="#ec4899"/>
+                  <circle cx="42" cy="28" r="3" fill="#ec4899"/>
+                </svg>
+              </div>
+              <h1 className="text-5xl font-bold text-white tracking-tight mb-4">My Chat App</h1>
+              <p className="text-xl text-white/70 mb-8">Connect instantly with friends and family</p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-pink-400 text-xl">💬</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Real-time Messaging</p>
+                    <p className="text-white/60 text-sm">Instant message delivery</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-lg bg-fuchsia-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-fuchsia-400 text-xl">🔒</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Secure & Private</p>
+                    <p className="text-white/60 text-sm">End-to-end encrypted</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-purple-400 text-xl">📱</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Works Everywhere</p>
+                    <p className="text-white/60 text-sm">Desktop, mobile, web</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">My Chat App</h1>
-          <p className="text-sm text-white/50 mt-2">
-            {authMode === "signin" ? "Welcome back" : "Create your account"}
-          </p>
-        </div>
+
+          {/* Right side - Form */}
+          <div className="w-full max-w-md mx-auto lg:mx-0">
+            <div className="flex flex-col items-center mb-8 lg:items-start">
+              <div className="lg:hidden h-16 w-16 rounded-2xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-2xl shadow-pink-500/40 mb-4 ring-1 ring-white/20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-10 w-10">
+                  <path d="M8 18a4 4 0 0 1 4-4h40a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H38l-6 7-6-7H12a4 4 0 0 1-4-4V18z" fill="white" opacity="0.95"/>
+                  <circle cx="22" cy="28" r="3" fill="#ec4899"/>
+                  <circle cx="32" cy="28" r="3" fill="#ec4899"/>
+                  <circle cx="42" cy="28" r="3" fill="#ec4899"/>
+                </svg>
+              </div>
+              <h2 className="text-3xl font-bold text-white tracking-tight">
+                {authMode === "signin" ? "Welcome back" : "Create account"}
+              </h2>
+              <p className="text-sm text-white/50 mt-2">
+                {authMode === "signin" ? "Sign in to continue" : "Join millions of users"}
+              </p>
+            </div>
 
         {/* Auth mode toggle */}
         <div className="flex rounded-2xl bg-white/5 border border-white/10 p-1 mb-6 backdrop-blur-sm">
@@ -282,6 +331,8 @@ export default function LoginPage() {
             {authMode === "signin" ? "Sign up" : "Sign in"}
           </button>
         </p>
+          </div>
+        </div>
       </div>
     </div>
   );
