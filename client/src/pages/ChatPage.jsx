@@ -40,7 +40,9 @@ import {
   EyeOff,
   MessageCircle,
   PhoneCall as PhoneCallIcon,
-  Sticker
+  Sticker,
+  Camera,
+  Image
 } from "lucide-react";
 
 import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
@@ -4007,46 +4009,46 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar - Compact bottom toolbar */}
-                        <div className="flex items-center justify-center gap-4 mb-4 pb-4">
-                          {/* Attachments */}
+                        {/* Action Toolbar - 4 large red buttons */}
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                          {/* Attachments - Plus */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
+                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
                             title="Attachments"
                           >
-                            <Plus className="h-6 w-6" />
+                            <Plus className="h-7 w-7" />
                           </button>
                           
                           {/* Camera */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
+                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
                             title="Camera"
                           >
-                            📷
+                            <Camera className="h-7 w-7" />
                           </button>
                           
-                          {/* Photos */}
+                          {/* Photos - Image */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
+                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
                             title="Photos"
                           >
-                            🖼️
+                            <Image className="h-7 w-7" />
                           </button>
                           
-                          {/* Voice */}
+                          {/* Voice - Microphone */}
                           <button
                             type="button"
                             onClick={handleToggleRecording}
-                            className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110 active:scale-95"
+                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
                             title="Voice message"
                           >
-                            🎤
+                            <Mic className="h-7 w-7" />
                           </button>
                         </div>
 
