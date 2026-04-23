@@ -648,33 +648,53 @@ export default function ChatPage() {
     if (demoMode) return;
 
     console.log('[Read Receipts] Marking messages as read for contact:', contactId);
+    console.log('[Read Receipts] User ID:', user?.id);
+    console.log('[Read Receipts] Session token exists:', !!session?.access_token);
+    console.log('[Read Receipts] Supabase exists:', !!supabase);
 
     // Try backend first
     if (session?.access_token) {
       try {
+        console.log('[Read Receipts] Calling backend API...');
         const res = await fetch(`${apiBaseUrl}/api/dm/${encodeURIComponent(contactId)}/read`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${session.access_token}` }
         });
         const data = await res.json();
+        console.log('[Read Receipts] Backend response status:', res.status);
         console.log('[Read Receipts] Backend response:', data);
-        return;
+        
+        if (res.ok) {
+          console.log('[Read Receipts] ✅ Backend marked', data.markedCount, 'messages as read');
+          return;
+        } else {
+          console.error('[Read Receipts] ❌ Backend failed:', data);
+        }
       } catch (err) {
-        console.log('[Read Receipts] Backend failed, falling back to Supabase:', err.message);
+        console.error('[Read Receipts] ❌ Backend error:', err.message);
         // Fall through to Supabase
       }
     }
 
     // Fallback to direct Supabase update
     if (supabase) {
+      console.log('[Read Receipts] Trying direct Supabase update...');
       const { data, error } = await supabase
         .from("direct_messages")
         .update({ read_at: new Date().toISOString() })
         .eq("sender_id", contactId)
         .eq("recipient_id", user.id)
-        .is("read_at", null);
+        .is("read_at", null)
+        .select("id");
       
-      console.log('[Read Receipts] Supabase update result:', { data, error });
+      if (error) {
+        console.error('[Read Receipts] ❌ Supabase error:', error);
+      } else {
+        console.log('[Read Receipts] ✅ Supabase marked', data?.length || 0, 'messages as read');
+        console.log('[Read Receipts] Updated message IDs:', data?.map(m => m.id));
+      }
+    } else {
+      console.error('[Read Receipts] ❌ No Supabase client available');
     }
   };
 
@@ -3755,7 +3775,7 @@ export default function ChatPage() {
                       }}
                     />
 
-                    <div className="flex items-end gap-3">
+                    <div className="flex items-end gap-2 md:gap-3">
                       <div className="flex-1 relative">
                         {/* Hidden file input for custom sticker upload */}
                         <input
@@ -3898,42 +3918,51 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        <textarea
-                          value={messageText}
-                          onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
-                          placeholder={recording ? "Recording voice…" : "Message"}
-                          rows={1}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendDirectText();
-                            }
-                          }}
-                          className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-sm text-white placeholder-white/40 outline-none focus:bg-white/10 focus:border-white/20"
-                        />
-                        <div className="absolute right-3 bottom-3 flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowStickerPicker((v) => !v);
-                              setShowEmojiPicker(false);
+                        <div className="relative">
+                          <textarea
+                            value={messageText}
+                            onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
+                            placeholder={recording ? "Recording voice…" : "Message"}
+                            rows={1}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendDirectText();
+                              }
                             }}
-                            className="text-white/40 hover:text-white/80 transition"
-                            title="Stickers"
-                          >
-                            <Sticker className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowEmojiPicker((v) => !v);
-                              setShowStickerPicker(false);
+                            onFocus={(e) => {
+                              // Scroll input into view when keyboard opens (mobile)
+                              setTimeout(() => {
+                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 300);
                             }}
-                            className="text-white/40 hover:text-white/80 transition"
-                            title="Emoji"
-                          >
-                            <Smile className="h-5 w-5" />
-                          </button>
+                            className="w-full resize-none rounded-2xl border border-white/10 bg-white/10 px-4 py-3 pr-20 text-sm md:text-base text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
+                            style={{ fontSize: '16px' }} // Prevents iOS zoom on focus
+                          />
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowStickerPicker((v) => !v);
+                                setShowEmojiPicker(false);
+                              }}
+                              className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
+                              title="Stickers"
+                            >
+                              <Sticker className="h-5 w-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowEmojiPicker((v) => !v);
+                                setShowStickerPicker(false);
+                              }}
+                              className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
+                              title="Emoji"
+                            >
+                              <Smile className="h-5 w-5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -3942,7 +3971,7 @@ export default function ChatPage() {
                         onClick={() => dmFileInputRef.current?.click()}
                         disabled={pendingActionByUserId[dmTargetId] === "media"}
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex items-center justify-center rounded-2xl bg-white/5 p-3 text-white/70 hover:bg-white/10 hover:text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center rounded-2xl bg-white/10 p-3 md:p-3 min-w-[44px] min-h-[44px] text-white/70 hover:bg-white/15 hover:text-white transition disabled:opacity-60 disabled:cursor-not-allowed active:bg-white/20"
                         title="Attach"
                       >
                         <Paperclip className="h-5 w-5" />
@@ -3952,10 +3981,10 @@ export default function ChatPage() {
                         type="button"
                         onClick={handleToggleRecording}
                         whileTap={{ scale: 0.96 }}
-                        className={`inline-flex items-center justify-center rounded-2xl p-3 transition ${
+                        className={`inline-flex items-center justify-center rounded-2xl p-3 md:p-3 min-w-[44px] min-h-[44px] transition ${
                           recording
-                            ? "bg-red-500/20 text-red-200 hover:bg-red-500/30"
-                            : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                            ? "bg-red-500/30 text-red-200 hover:bg-red-500/40 active:bg-red-500/50"
+                            : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white active:bg-white/20"
                         }`}
                         title={recording ? "Stop recording" : "Voice message"}
                       >
@@ -3967,7 +3996,7 @@ export default function ChatPage() {
                         onClick={handleSendDirectText}
                         whileTap={{ scale: 0.96 }}
                         disabled={!messageText.trim()}
-                        className="inline-flex items-center justify-center rounded-2xl bg-pink-500/20 p-3 text-pink-200 hover:bg-pink-500/30 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center rounded-2xl bg-pink-500/30 p-3 md:p-3 min-w-[44px] min-h-[44px] text-pink-200 hover:bg-pink-500/40 transition disabled:opacity-60 disabled:cursor-not-allowed active:bg-pink-500/50"
                         title="Send"
                       >
                         <Send className="h-5 w-5" />
