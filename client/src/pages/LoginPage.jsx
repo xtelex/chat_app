@@ -103,14 +103,22 @@ export default function LoginPage() {
 
   if (checking) {
     return (
-      <div className="min-h-[100dvh] relative overflow-hidden flex items-center justify-center">
-        {/* Animated background */}
-        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-black" />
-        
+      <div className="min-h-[100dvh] relative overflow-hidden flex items-center justify-center" style={{
+        background: 'linear-gradient(135deg, #030712 0%, #0f172a 50%, #000000 100%)',
+        backgroundAttachment: 'fixed'
+      }}>
         {/* Animated gradient blobs */}
         <div className="fixed inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-20" style={{
+            background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)',
+            filter: 'blur(60px)',
+            animation: 'pulse 4s ease-in-out infinite'
+          }} />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-20" style={{
+            background: 'radial-gradient(circle, #d946ef 0%, transparent 70%)',
+            filter: 'blur(60px)',
+            animation: 'pulse 4s ease-in-out infinite 1s'
+          }} />
         </div>
 
         <div className="h-8 w-8 rounded-full border-2 border-pink-500 border-t-transparent animate-spin" />
@@ -119,22 +127,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] relative overflow-hidden flex items-center justify-center px-4 py-8">
-      {/* Animated background */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-black" />
-      
+    <div className="min-h-[100dvh] relative overflow-hidden flex items-center justify-center px-4 py-8" style={{
+      background: 'linear-gradient(135deg, #030712 0%, #0f172a 50%, #000000 100%)',
+      backgroundAttachment: 'fixed'
+    }}>
       {/* Animated gradient blobs */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-screen filter blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-20" style={{
+          background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'pulse 4s ease-in-out infinite'
+        }} />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-20" style={{
+          background: 'radial-gradient(circle, #d946ef 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'pulse 4s ease-in-out infinite 1s'
+        }} />
+        <div className="absolute top-1/3 left-1/3 w-96 h-96 rounded-full opacity-10" style={{
+          background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'pulse 4s ease-in-out infinite 2s'
+        }} />
       </div>
-
-      {/* Grid pattern overlay */}
-      <div className="fixed inset-0 -z-10 opacity-5" style={{
-        backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent)',
-        backgroundSize: '50px 50px'
-      }} />
 
       <div className="w-full max-w-sm relative z-10">
         {/* Logo + title */}
