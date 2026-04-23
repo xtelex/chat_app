@@ -4007,59 +4007,70 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        <div className="relative">
-                          {/* Action toolbar - visible on mobile */}
-                          <div className="md:hidden flex items-center gap-2 mb-3 pb-3 border-b border-white/10 overflow-x-auto">
-                            <button
-                              type="button"
-                              onClick={() => dmFileInputRef.current?.click()}
-                              className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-500 flex items-center justify-center text-white hover:shadow-lg hover:shadow-pink-500/50 transition"
-                              title="Attachments"
-                            >
-                              <Plus className="h-6 w-6" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => dmFileInputRef.current?.click()}
-                              className="flex-shrink-0 h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30 transition"
-                              title="Camera"
-                            >
-                              📷
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => dmFileInputRef.current?.click()}
-                              className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500/30 transition"
-                              title="Photos"
-                            >
-                              🖼️
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleToggleRecording}
-                              className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 hover:bg-purple-500/30 transition"
-                              title="Voice message"
-                            >
-                              🎤
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setShowEmojiPicker((v) => !v)}
-                              className="flex-shrink-0 h-12 w-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 hover:bg-yellow-500/30 transition"
-                              title="Emoji"
-                            >
-                              😊
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setShowStickerPicker((v) => !v)}
-                              className="flex-shrink-0 h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 hover:bg-green-500/30 transition"
-                              title="Stickers"
-                            >
-                              🍄
-                            </button>
-                          </div>
+                        {/* Action Toolbar - Above message input */}
+                        <div className="flex items-center justify-start gap-3 mb-4 pb-4 border-b border-white/10 overflow-x-auto">
+                          {/* Attachments */}
+                          <button
+                            type="button"
+                            onClick={() => dmFileInputRef.current?.click()}
+                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white hover:shadow-lg hover:shadow-pink-500/50 transition transform hover:scale-110"
+                            title="Attachments"
+                          >
+                            <Plus className="h-8 w-8" />
+                          </button>
+                          
+                          {/* Camera */}
+                          <button
+                            type="button"
+                            onClick={() => dmFileInputRef.current?.click()}
+                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-red-500/50 transition transform hover:scale-110"
+                            title="Camera"
+                          >
+                            📷
+                          </button>
+                          
+                          {/* Photos */}
+                          <button
+                            type="button"
+                            onClick={() => dmFileInputRef.current?.click()}
+                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-blue-500/50 transition transform hover:scale-110"
+                            title="Photos"
+                          >
+                            🖼️
+                          </button>
+                          
+                          {/* Voice */}
+                          <button
+                            type="button"
+                            onClick={handleToggleRecording}
+                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-purple-500/50 transition transform hover:scale-110"
+                            title="Voice message"
+                          >
+                            🎤
+                          </button>
+                          
+                          {/* Emoji */}
+                          <button
+                            type="button"
+                            onClick={() => setShowEmojiPicker((v) => !v)}
+                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-yellow-500/50 transition transform hover:scale-110"
+                            title="Emoji"
+                          >
+                            😊
+                          </button>
+                          
+                          {/* Stickers */}
+                          <button
+                            type="button"
+                            onClick={() => setShowStickerPicker((v) => !v)}
+                            className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center text-white hover:shadow-lg hover:shadow-green-500/50 transition transform hover:scale-110"
+                            title="Stickers"
+                          >
+                            🍄
+                          </button>
+                        </div>
 
+                        <div className="relative">
                           <textarea
                             value={messageText}
                             onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
