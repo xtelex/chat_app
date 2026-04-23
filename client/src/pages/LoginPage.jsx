@@ -103,18 +103,43 @@ export default function LoginPage() {
 
   if (checking) {
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-slate-950 to-black flex items-center justify-center">
+      <div className="min-h-[100dvh] relative overflow-hidden flex items-center justify-center">
+        {/* Animated background */}
+        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-black" />
+        
+        {/* Animated gradient blobs */}
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
         <div className="h-8 w-8 rounded-full border-2 border-pink-500 border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-950 to-black flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
+    <div className="min-h-[100dvh] relative overflow-hidden flex items-center justify-center px-4 py-8">
+      {/* Animated background */}
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-black" />
+      
+      {/* Animated gradient blobs */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-screen filter blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      {/* Grid pattern overlay */}
+      <div className="fixed inset-0 -z-10 opacity-5" style={{
+        backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent)',
+        backgroundSize: '50px 50px'
+      }} />
+
+      <div className="w-full max-w-sm relative z-10">
         {/* Logo + title */}
         <div className="flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-pink-500/30 mb-4">
+          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-2xl shadow-pink-500/40 mb-4 ring-1 ring-white/20">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-10 w-10">
               <path d="M8 18a4 4 0 0 1 4-4h40a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H38l-6 7-6-7H12a4 4 0 0 1-4-4V18z" fill="white" opacity="0.95"/>
               <circle cx="22" cy="28" r="3" fill="#ec4899"/>
@@ -122,18 +147,18 @@ export default function LoginPage() {
               <circle cx="42" cy="28" r="3" fill="#ec4899"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">My Chat App</h1>
-          <p className="text-sm text-white/50 mt-1">
+          <h1 className="text-3xl font-bold text-white tracking-tight">My Chat App</h1>
+          <p className="text-sm text-white/50 mt-2">
             {authMode === "signin" ? "Welcome back" : "Create your account"}
           </p>
         </div>
 
         {/* Auth mode toggle */}
-        <div className="flex rounded-2xl bg-white/5 border border-white/10 p-1 mb-6">
+        <div className="flex rounded-2xl bg-white/5 border border-white/10 p-1 mb-6 backdrop-blur-sm">
           {["signin", "signup"].map((mode) => (
             <button key={mode} type="button"
               onClick={() => { setAuthMode(mode); setNotice(null); }}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${authMode === mode ? "bg-pink-500 text-white shadow-sm" : "text-white/50 hover:text-white/80"}`}>
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${authMode === mode ? "bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white shadow-lg shadow-pink-500/30" : "text-white/50 hover:text-white/80"}`}>
               {mode === "signin" ? "Sign In" : "Sign Up"}
             </button>
           ))}
@@ -144,7 +169,7 @@ export default function LoginPage() {
           {["email", "phone"].map((m) => (
             <button key={m} type="button"
               onClick={() => { setMethod(m); setNotice(null); setOtpSent(false); setOtp(""); }}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition ${method === m ? "border-pink-500 bg-pink-500/10 text-pink-400" : "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60"}`}>
+              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition ${method === m ? "border-pink-500/50 bg-pink-500/10 text-pink-300 shadow-lg shadow-pink-500/20" : "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60"}`}>
               {m === "email" ? "Email" : "Phone"}
             </button>
           ))}
@@ -152,7 +177,7 @@ export default function LoginPage() {
 
         {/* Notice */}
         {notice && (
-          <div className={`mb-5 rounded-xl px-4 py-3 text-sm ${notice.type === "error" ? "bg-red-500/10 text-red-300 border border-red-500/20" : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"}`}>
+          <div className={`mb-5 rounded-xl px-4 py-3 text-sm backdrop-blur-sm ${notice.type === "error" ? "bg-red-500/10 text-red-300 border border-red-500/30 shadow-lg shadow-red-500/10" : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 shadow-lg shadow-emerald-500/10"}`}>
             {notice.message}
           </div>
         )}
@@ -161,8 +186,8 @@ export default function LoginPage() {
         {method === "email" ? (
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Email</label>
-              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 focus-within:bg-white/8 transition">
+              <label className="block text-sm font-medium text-white/70 mb-2">Email</label>
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 focus-within:bg-white/8 focus-within:shadow-lg focus-within:shadow-pink-500/20 transition backdrop-blur-sm">
                 <Mail className="h-4 w-4 text-white/30 flex-shrink-0" />
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
@@ -170,8 +195,8 @@ export default function LoginPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Password</label>
-              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 focus-within:bg-white/8 transition">
+              <label className="block text-sm font-medium text-white/70 mb-2">Password</label>
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 focus-within:bg-white/8 focus-within:shadow-lg focus-within:shadow-pink-500/20 transition backdrop-blur-sm">
                 <Lock className="h-4 w-4 text-white/30 flex-shrink-0" />
                 <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
                   className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
@@ -182,15 +207,15 @@ export default function LoginPage() {
               </div>
             </div>
             <button type="submit" disabled={loading}
-              className="w-full rounded-xl bg-pink-500 hover:bg-pink-400 active:bg-pink-600 text-white py-3 text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-pink-500/25 mt-2">
+              className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-500 hover:from-pink-400 hover:to-fuchsia-400 active:from-pink-600 active:to-fuchsia-600 text-white py-3 text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-pink-500/30 mt-2">
               {loading ? "Please wait…" : authMode === "signin" ? "Sign In" : "Create Account"}
             </button>
           </form>
         ) : (
           <form onSubmit={handlePhoneAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Phone number</label>
-              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 transition">
+              <label className="block text-sm font-medium text-white/70 mb-2">Phone number</label>
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 focus-within:bg-white/8 focus-within:shadow-lg focus-within:shadow-pink-500/20 transition backdrop-blur-sm">
                 <Phone className="h-4 w-4 text-white/30 flex-shrink-0" />
                 <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
                   className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
@@ -199,8 +224,8 @@ export default function LoginPage() {
             </div>
             {otpSent && (
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1.5">SMS Code</label>
-                <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 transition">
+                <label className="block text-sm font-medium text-white/70 mb-2">SMS Code</label>
+                <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-pink-500/50 focus-within:bg-white/8 focus-within:shadow-lg focus-within:shadow-pink-500/20 transition backdrop-blur-sm">
                   <KeyRound className="h-4 w-4 text-white/30 flex-shrink-0" />
                   <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)}
                     className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
@@ -211,22 +236,22 @@ export default function LoginPage() {
               </div>
             )}
             <button type="submit" disabled={loading}
-              className="w-full rounded-xl bg-pink-500 hover:bg-pink-400 text-white py-3 text-sm font-semibold transition disabled:opacity-60 shadow-lg shadow-pink-500/25 mt-2">
+              className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-500 hover:from-pink-400 hover:to-fuchsia-400 text-white py-3 text-sm font-semibold transition disabled:opacity-60 shadow-lg shadow-pink-500/30 mt-2">
               {loading ? "Please wait…" : otpSent ? "Verify Code" : "Send Code"}
             </button>
           </form>
         )}
 
         {/* Divider */}
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-white/10" />
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           <span className="text-xs text-white/30 font-medium">OR</span>
-          <div className="flex-1 h-px bg-white/10" />
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
         </div>
 
         {/* Google */}
         <button type="button" onClick={handleGoogle} disabled={loading}
-          className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 py-3 text-sm font-semibold text-white/80 transition disabled:opacity-60">
+          className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 py-3 text-sm font-semibold text-white/80 transition disabled:opacity-60 backdrop-blur-sm shadow-lg shadow-white/5">
           <svg viewBox="0 0 48 48" className="h-5 w-5 flex-shrink-0" aria-hidden="true">
             <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.655 32.653 29.151 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C34.047 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
             <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 16.108 19.001 12 24 12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C34.047 6.053 29.268 4 24 4c-7.682 0-14.381 4.332-17.694 10.691z"/>
