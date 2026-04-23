@@ -4010,7 +4010,7 @@ export default function ChatPage() {
                           </div>
                         )}
                         {/* Action Toolbar with Message Input - Compact - with minimal padding */}
-                        <div className="flex items-center gap-1 px-2 py-1 md:px-4 md:py-2 pb-14 md:pb-2">
+                        <div className="flex items-center gap-1 px-2 py-1 md:px-4 md:py-2 pb-12 md:pb-2">
                           {/* Attachments - Plus */}
                           <button
                             type="button"
