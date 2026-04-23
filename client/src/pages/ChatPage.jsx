@@ -3662,7 +3662,7 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5 pb-24 md:pb-0">
                     {dmLoading ? (
                       <div className="text-sm text-white/60">Loading messages…</div>                    ) : dmError ? (
                       <div className="text-sm text-red-200/80 whitespace-pre-line">{dmError}</div>
