@@ -4078,13 +4078,13 @@ export default function ChatPage() {
                   <AnimatePresence>
                     {showProfilePanel && (
                       <motion.div
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 300, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
+                        initial={{ x: '100%', opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: '100%', opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
-                        className="border-l border-white/10 bg-black/30 backdrop-blur-xl flex flex-col overflow-hidden flex-shrink-0"
+                        className="absolute md:relative inset-y-0 right-0 w-full md:w-[300px] border-l border-white/10 bg-black/30 backdrop-blur-xl flex flex-col overflow-hidden flex-shrink-0 z-30"
                       >
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                        <div className="flex items-center justify-between px-4 md:px-5 py-4 border-b border-white/10">
                           <span className="text-sm font-semibold text-white">Profile</span>
                           <button onClick={() => setShowProfilePanel(false)} className="text-white/40 hover:text-white transition">
                             <X className="h-4 w-4" />
@@ -4093,7 +4093,7 @@ export default function ChatPage() {
 
                         <div className="flex-1 overflow-y-auto">
                           {/* Contact info */}
-                          <div className="flex flex-col items-center px-5 py-6 border-b border-white/10">
+                          <div className="flex flex-col items-center px-4 md:px-5 py-6 border-b border-white/10">
                             <div className="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden mb-3">
                               {selectedChat.avatar_url ? (
                                 <img src={selectedChat.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
@@ -4101,24 +4101,24 @@ export default function ChatPage() {
                                 <span className="text-white text-2xl font-bold">{getNameInitials(dmDisplayName)}</span>
                               )}
                             </div>
-                            <p className="text-white font-semibold text-base">{dmDisplayName}</p>
+                            <p className="text-white font-semibold text-base text-center break-words w-full px-2">{dmDisplayName}</p>
                             {selectedChat.nickname && (
-                              <p className="text-white/50 text-xs mt-0.5">{selectedChat.display_name}</p>
+                              <p className="text-white/50 text-xs mt-0.5 text-center break-words w-full px-2">{selectedChat.display_name}</p>
                             )}
                             <div className="flex gap-3 mt-4">
                               <button onClick={() => handleStartCall(selectedChat)} className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition">
                                 <Phone className="h-4 w-4 text-green-400" />
-                                <span className="text-xs text-white/60">Call</span>
+                                <span className="text-xs text-white/60 whitespace-nowrap">Call</span>
                               </button>
                               <button onClick={() => { setShowProfilePanel(false); setShowNicknameEditor(true); }} className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition">
                                 <Pencil className="h-4 w-4 text-white/60" />
-                                <span className="text-xs text-white/60">Nickname</span>
+                                <span className="text-xs text-white/60 whitespace-nowrap">Nickname</span>
                               </button>
                             </div>
                           </div>
 
                           {/* Shared Media */}
-                          <div className="px-5 py-4 border-b border-white/10">
+                          <div className="px-4 md:px-5 py-4 border-b border-white/10">
                             <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Shared Media</p>
                             {(() => {
                               const mediaMessages = dmMessages.filter((m) => m.media_path && (m.media_type === "image" || m.media_type === "video"));
@@ -4144,7 +4144,7 @@ export default function ChatPage() {
                           </div>
 
                           {/* Shared Links */}
-                          <div className="px-5 py-4">
+                          <div className="px-4 md:px-5 py-4">
                             <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Shared Links</p>
                             {(() => {
                               const urlRegex = /https?:\/\/[^\s]+/g;
