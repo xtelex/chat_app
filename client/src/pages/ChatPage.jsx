@@ -2973,7 +2973,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="relative isolate flex h-dvh bg-gradient-to-b from-slate-950 to-black overflow-hidden">
+    <div className="relative isolate flex h-dvh w-full bg-gradient-to-b from-slate-950 to-black overflow-hidden">
       {/* Hidden audio elements for WebRTC */}
       <audio ref={remoteVideoRef} autoPlay playsInline className="hidden" />
 
@@ -3467,7 +3467,7 @@ export default function ChatPage() {
       {/* Main Content Area */}
       <div className={`
         ${currentSection === "chats" && !selectedChat ? "hidden md:flex" : "flex"}
-        flex-1 flex-col min-w-0 pb-16 md:pb-0
+        flex-1 flex-col min-w-0 w-full pb-16 md:pb-0
       `}>
         {/* Mobile: show main content for non-chat sections always */}
         {currentSection === "chats" && (
@@ -3477,9 +3477,9 @@ export default function ChatPage() {
             </div>
             <div className="flex-1 overflow-y-auto">
               {selectedChat ? (
-                <div className="flex h-full">
+                <div className="flex h-full w-full">
                   {/* Main chat column */}
-                  <div className="flex flex-col min-w-0">
+                  <div className="flex flex-col flex-1 min-w-0 w-full">
                   {/* Chat header - responsive layout */}
                   <div className="border-b border-white/10 bg-black/10 px-4 md:px-6 py-3 md:py-4">
                     {/* Mobile layout (< 768px) - Two rows */}
