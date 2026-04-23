@@ -4009,132 +4009,111 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar - 4 large red buttons */}
-                        <div className="flex items-center justify-center gap-3 mb-4">
+                        {/* Action Toolbar with Message Input - All in one line */}
+                        <div className="flex items-center justify-center gap-2">
                           {/* Attachments - Plus */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
+                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
                             title="Attachments"
                           >
-                            <Plus className="h-7 w-7" />
+                            <Plus className="h-6 w-6" />
                           </button>
                           
                           {/* Camera */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
+                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
                             title="Camera"
                           >
-                            <Camera className="h-7 w-7" />
+                            <Camera className="h-6 w-6" />
                           </button>
                           
                           {/* Photos - Image */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
+                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
                             title="Photos"
                           >
-                            <Image className="h-7 w-7" />
+                            <Image className="h-6 w-6" />
                           </button>
                           
                           {/* Voice - Microphone */}
                           <button
                             type="button"
                             onClick={handleToggleRecording}
-                            className="h-14 w-14 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 shadow-lg"
+                            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition transform hover:scale-110 active:scale-95 flex-shrink-0"
                             title="Voice message"
                           >
-                            <Mic className="h-7 w-7" />
+                            <Mic className="h-6 w-6" />
                           </button>
-                        </div>
 
-                        <div className="relative">
-                          <textarea
-                            value={messageText}
-                            onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
-                            placeholder={recording ? "Recording voice…" : "Message"}
-                            rows={1}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendDirectText();
-                              }
-                            }}
-                            onFocus={(e) => {
-                              // Scroll input into view when keyboard opens (mobile)
-                              setTimeout(() => {
-                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 300);
-                            }}
-                            className="w-full resize-none rounded-2xl border border-white/10 bg-white/10 px-4 py-3 pr-20 text-sm md:text-base text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
-                            style={{ fontSize: '16px' }} // Prevents iOS zoom on focus
-                          />
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowStickerPicker((v) => !v);
-                                setShowEmojiPicker(false);
+                          {/* Message Input */}
+                          <div className="relative flex-1">
+                            <textarea
+                              value={messageText}
+                              onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
+                              placeholder={recording ? "Recording voice…" : "Message"}
+                              rows={1}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSendDirectText();
+                                }
                               }}
-                              className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
-                              title="Stickers"
-                            >
-                              <Sticker className="h-5 w-5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowEmojiPicker((v) => !v);
-                                setShowStickerPicker(false);
+                              onFocus={(e) => {
+                                // Scroll input into view when keyboard opens (mobile)
+                                setTimeout(() => {
+                                  e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 300);
                               }}
-                              className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
-                              title="Emoji"
-                            >
-                              <Smile className="h-5 w-5" />
-                            </button>
+                              className="w-full resize-none rounded-2xl border border-white/10 bg-white/10 px-4 py-3 pr-20 text-sm md:text-base text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
+                              style={{ fontSize: '16px' }} // Prevents iOS zoom on focus
+                            />
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowStickerPicker((v) => !v);
+                                  setShowEmojiPicker(false);
+                                }}
+                                className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
+                                title="Stickers"
+                              >
+                                <Sticker className="h-5 w-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowEmojiPicker((v) => !v);
+                                  setShowStickerPicker(false);
+                                }}
+                                className="p-2 text-white/50 hover:text-white/80 transition rounded-lg hover:bg-white/10 active:bg-white/20"
+                                title="Emoji"
+                              >
+                                <Smile className="h-5 w-5" />
+                              </button>
+                            </div>
                           </div>
+
+                          {/* Send Button */}
+                          <motion.button
+                            type="button"
+                            onClick={handleSendDirectText}
+                            whileTap={{ scale: 0.96 }}
+                            disabled={!messageText.trim()}
+                            className="inline-flex items-center justify-center rounded-full bg-red-500 p-3 min-w-[44px] min-h-[44px] text-white hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed active:bg-red-700 flex-shrink-0"
+                            title="Send"
+                          >
+                            <Smile className="h-6 w-6" />
+                          </motion.button>
                         </div>
                       </div>
 
-                      <motion.button
-                        type="button"
-                        onClick={() => dmFileInputRef.current?.click()}
-                        disabled={pendingActionByUserId[dmTargetId] === "media"}
-                        whileTap={{ scale: 0.96 }}
-                        className="inline-flex items-center justify-center rounded-2xl bg-white/10 p-3 md:p-3 min-w-[44px] min-h-[44px] text-white/70 hover:bg-white/15 hover:text-white transition disabled:opacity-60 disabled:cursor-not-allowed active:bg-white/20"
-                        title="Attach"
-                      >
-                        <Paperclip className="h-5 w-5" />
-                      </motion.button>
-
-                      <motion.button
-                        type="button"
-                        onClick={handleToggleRecording}
-                        whileTap={{ scale: 0.96 }}
-                        className={`inline-flex items-center justify-center rounded-2xl p-3 md:p-3 min-w-[44px] min-h-[44px] transition ${
-                          recording
-                            ? "bg-red-500/30 text-red-200 hover:bg-red-500/40 active:bg-red-500/50"
-                            : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white active:bg-white/20"
-                        }`}
-                        title={recording ? "Stop recording" : "Voice message"}
-                      >
-                        {recording ? <X className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                      </motion.button>
-
-                      <motion.button
-                        type="button"
-                        onClick={handleSendDirectText}
-                        whileTap={{ scale: 0.96 }}
-                        disabled={!messageText.trim()}
-                        className="inline-flex items-center justify-center rounded-2xl bg-pink-500/30 p-3 md:p-3 min-w-[44px] min-h-[44px] text-pink-200 hover:bg-pink-500/40 transition disabled:opacity-60 disabled:cursor-not-allowed active:bg-pink-500/50"
-                        title="Send"
-                      >
-                        <Send className="h-5 w-5" />
-                      </motion.button>
+                      {/* Old buttons removed - now integrated in toolbar above */}
                     </div>
                     </>
                     )}
