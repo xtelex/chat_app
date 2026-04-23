@@ -4015,40 +4015,40 @@ export default function ChatPage() {
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
                             title="Attachments"
                           >
-                            <Plus className="h-3.5 w-3.5" />
+                            <Plus className="h-4 w-4" />
                           </button>
                           
                           {/* Camera */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
                             title="Camera"
                           >
-                            <Camera className="h-3.5 w-3.5" />
+                            <Camera className="h-4 w-4" />
                           </button>
                           
                           {/* Photos - Image */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
                             title="Photos"
                           >
-                            <Image className="h-3.5 w-3.5" />
+                            <Image className="h-4 w-4" />
                           </button>
                           
                           {/* Voice - Microphone */}
                           <button
                             type="button"
                             onClick={handleToggleRecording}
-                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
                             title="Voice message"
                           >
-                            <Mic className="h-3.5 w-3.5" />
+                            <Mic className="h-4 w-4" />
                           </button>
 
                           {/* Message Input */}
@@ -4090,10 +4090,10 @@ export default function ChatPage() {
                             onClick={handleSendDirectText}
                             whileTap={{ scale: 0.96 }}
                             disabled={!messageText.trim()}
-                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
+                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
                             title="Send"
                           >
-                            <Send className="h-3.5 w-3.5" />
+                            <Send className="h-4 w-4" />
                           </motion.button>
                         </div>
                       </div>
