@@ -366,6 +366,13 @@ export default function ChatPage() {
     return () => controller.abort();
   }, [apiBaseUrl, demoMode, session?.access_token, user?.id]);
 
+  // Load custom stickers on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadCustomStickers();
+    }
+  }, [user?.id]);
+
   // Load last message per contact for preview + compute unread counts from DB
   useEffect(() => {
     if (!supabase || !user?.id) return;
@@ -3619,14 +3626,26 @@ export default function ChatPage() {
 
                     <div className="flex items-end gap-3">
                       <div className="flex-1 relative">
+                        {/* Hidden file input for custom sticker upload */}
+                        <input
+                          ref={customStickerInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/gif,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadCustomSticker(file);
+                            e.target.value = '';
+                          }}
+                          className="hidden"
+                        />
                         {/* Sticker picker */}
                         {showStickerPicker && (
                           <div
                             ref={stickerPickerRef}
-                            className="absolute bottom-12 left-0 z-20 bg-slate-800 border border-white/10 rounded-2xl p-4 shadow-xl w-80"
+                            className="absolute bottom-12 left-0 z-20 bg-slate-800 border border-white/10 rounded-2xl p-4 shadow-xl w-80 max-h-96 overflow-y-auto"
                           >
                             <h3 className="text-sm font-semibold text-white/80 mb-3">Stickers</h3>
-                            <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                            <div className="grid grid-cols-4 gap-2">
                               {getAllStickers().map((sticker) => (
                                 <button
                                   key={sticker.id}
@@ -3640,17 +3659,67 @@ export default function ChatPage() {
                                     alt={sticker.name}
                                     className="w-full h-full object-contain"
                                     onError={(e) => {
-                                      // Fallback to emoji if image fails to load
                                       e.target.style.display = 'none';
                                       e.target.parentElement.innerHTML = `<span class="text-4xl">${sticker.emoji}</span>`;
                                     }}
                                   />
                                 </button>
                               ))}
+                              {/* Add custom sticker button */}
+                              <button
+                                type="button"
+                                onClick={() => customStickerInputRef.current?.click()}
+                                disabled={uploadingSticker}
+                                className="aspect-square rounded-xl border-2 border-dashed border-white/20 hover:border-pink-500/50 hover:bg-pink-500/10 transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Upload custom sticker"
+                              >
+                                {uploadingSticker ? (
+                                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/20 border-t-pink-500"></div>
+                                ) : (
+                                  <Plus className="h-8 w-8 text-white/40 group-hover:text-pink-400 transition" />
+                                )}
+                              </button>
                             </div>
-                            <p className="text-xs text-white/40 mt-3 text-center">
-                              Add your sticker images to <code className="bg-white/10 px-1 rounded">client/public/stickers/</code>
-                            </p>
+                            
+                            {/* Custom stickers section */}
+                            {customStickers.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-white/10">
+                                <h4 className="text-xs font-semibold text-white/60 mb-2">My Stickers</h4>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {customStickers.map((sticker) => (
+                                    <div key={sticker.id} className="relative group aspect-square">
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          const url = await getCustomStickerUrl(sticker.storage_path);
+                                          if (url) handleSendSticker(url);
+                                        }}
+                                        className="w-full h-full rounded-xl hover:bg-white/10 transition-all hover:scale-110 p-2 flex items-center justify-center"
+                                        title={sticker.name}
+                                      >
+                                        <img 
+                                          src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/chat-media/${sticker.storage_path}`}
+                                          alt={sticker.name}
+                                          className="w-full h-full object-contain"
+                                        />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (confirm('Delete this sticker?')) {
+                                            handleDeleteCustomSticker(sticker.id, sticker.storage_path);
+                                          }
+                                        }}
+                                        className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                        title="Delete sticker"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                         {/* Emoji picker */}
