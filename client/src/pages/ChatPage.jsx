@@ -4009,8 +4009,8 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar with Message Input - Compact */}
-                        <div className="flex items-center gap-2">
+                        {/* Action Toolbar with Message Input - Compact - with padding for mobile */}
+                        <div className="flex items-center gap-2 px-2 py-2 md:px-4 md:py-3 pb-20 md:pb-3">
                           {/* Attachments - Plus */}
                           <button
                             type="button"
