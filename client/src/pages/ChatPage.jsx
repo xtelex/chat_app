@@ -46,6 +46,84 @@ import {
 import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
 import { getAllStickers } from "../data/stickers.js";
 
+// Helper function to format message preview text
+function formatMessagePreview(message, senderName = null) {
+  // Handle call_missed type
+  if (message.media_type === "call_missed") {
+    return "📵 Missed call";
+  }
+  
+  // Handle media types
+  if (message.media_type === "image") return "📷 Image";
+  if (message.media_type === "video") return "🎥 Video";
+  if (message.media_type === "audio") return "🎤 Voice message";
+  
+  // Handle sticker messages
+  if (message.media_type === "sticker" || message.text?.startsWith("[sticker:")) {
+    return senderName ? `${senderName} sent a sticker` : "Sent a sticker";
+  }
+  
+  // Regular text message
+  return message.text || "";
+}
+
+// Component to display sticker messages with proper URL handling
+function StickerMessage({ message, supabase, getCustomStickerUrl }) {
+  const [stickerUrl, setStickerUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStickerUrl = async () => {
+      const pathOrUrl = message.text?.match(/\[sticker:(.*?)\]/)?.[1] || message.text;
+      
+      // Check if it's a local sticker (starts with /stickers/)
+      if (pathOrUrl.startsWith('/stickers/')) {
+        setStickerUrl(pathOrUrl);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if it's already a full URL (old messages)
+      if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+        setStickerUrl(pathOrUrl);
+        setLoading(false);
+        return;
+      }
+      
+      // It's a storage path, get signed URL
+      if (supabase && getCustomStickerUrl) {
+        const signedUrl = await getCustomStickerUrl(pathOrUrl);
+        setStickerUrl(signedUrl);
+      }
+      setLoading(false);
+    };
+
+    loadStickerUrl();
+  }, [message.text, supabase, getCustomStickerUrl]);
+
+  if (loading) {
+    return (
+      <div className="bg-transparent w-32 h-32 flex items-center justify-center">
+        <div className="animate-pulse text-4xl">🎨</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-transparent">
+      <img 
+        src={stickerUrl}
+        alt="Sticker"
+        className="w-32 h-32 object-contain cursor-pointer hover:scale-110 transition-transform"
+        onError={(e) => {
+          e.target.style.display = 'none';
+          e.target.parentElement.innerHTML = '<div class="text-4xl">🖼️</div>';
+        }}
+      />
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -398,11 +476,7 @@ export default function ChatPage() {
 
           // Build preview from latest message per contact
           if (!previewMap[otherId]) {
-            const preview = msg.media_type === "call_missed" ? "📵 Missed call"
-              : msg.media_type === "image" ? "📷 Image"
-              : msg.media_type === "video" ? "🎥 Video"
-              : msg.media_type === "audio" ? "🎤 Voice message"
-              : msg.text || "";
+            const preview = formatMessagePreview(msg);
             previewMap[otherId] = { text: preview, created_at: msg.created_at };
           }
 
@@ -835,17 +909,22 @@ export default function ChatPage() {
     }
   };
 
-  const handleSendSticker = async (stickerUrl) => {
+  const handleSendSticker = async (stickerPathOrUrl) => {
     if (!dmTargetId) return;
     if (blockedIds.has(dmTargetId) || blockedByIds.has(dmTargetId)) return;
     if (demoMode || !user?.id) return;
+
+    // Determine if this is a storage path or a local URL
+    // Local stickers start with /stickers/, custom stickers are storage paths
+    const isLocalSticker = stickerPathOrUrl.startsWith('/stickers/');
+    const stickerIdentifier = isLocalSticker ? stickerPathOrUrl : stickerPathOrUrl;
 
     const optimistic = {
       id: `local-${Date.now()}`,
       created_at: new Date().toISOString(),
       sender_id: user.id,
       recipient_id: dmTargetId,
-      text: `[sticker:${stickerUrl}]`,
+      text: `[sticker:${stickerIdentifier}]`,
       media_path: null,
       media_type: "sticker",
       media_mime: null
@@ -865,7 +944,7 @@ export default function ChatPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session.access_token}`
             },
-            body: JSON.stringify({ text: `[sticker:${stickerUrl}]` })
+            body: JSON.stringify({ text: `[sticker:${stickerIdentifier}]` })
           });
 
           if (res.ok) {
@@ -887,7 +966,7 @@ export default function ChatPage() {
       if (supabase) {
         const { data, error } = await supabase
           .from("direct_messages")
-          .insert({ sender_id: user.id, recipient_id: dmTargetId, text: `[sticker:${stickerUrl}]` })
+          .insert({ sender_id: user.id, recipient_id: dmTargetId, text: `[sticker:${stickerIdentifier}]` })
           .select("id, created_at, sender_id, recipient_id, text, media_path, media_type, media_mime")
           .single();
 
@@ -1968,12 +2047,13 @@ export default function ChatPage() {
         const msg = payload.new;
         if (!msg || msg.recipient_id !== user.id) return;
         const senderId = msg.sender_id;
+        
+        // Get sender name for preview
+        const sender = addedContacts.find((c) => c.id === senderId);
+        const senderName = sender?.name || "Someone";
+        
         // Update last message preview
-        const preview = msg.media_type === "call_missed" ? "📵 Missed call"
-          : msg.media_type === "image" ? "📷 Image"
-          : msg.media_type === "video" ? "🎥 Video"
-          : msg.media_type === "audio" ? "🎤 Voice message"
-          : msg.text || "";
+        const preview = formatMessagePreview(msg, senderName);
         setLastMessages((prev) => ({
           ...prev,
           [senderId]: { text: preview, created_at: msg.created_at }
@@ -3521,22 +3601,7 @@ export default function ChatPage() {
                                 <div className={`flex flex-col max-w-[65%] ${mine ? "items-end" : "items-start"}`}>
                                   {/* Sticker message */}
                                   {(m.media_type === "sticker" || m.text?.startsWith("[sticker:")) ? (
-                                    <div className="bg-transparent">
-                                      <img 
-                                        src={m.text?.match(/\[sticker:(.*?)\]/)?.[1] || m.text}
-                                        alt="Sticker"
-                                        className="w-32 h-32 object-contain cursor-pointer hover:scale-110 transition-transform"
-                                        onClick={() => {
-                                          const url = m.text?.match(/\[sticker:(.*?)\]/)?.[1] || m.text;
-                                          window.open(url, "_blank");
-                                        }}
-                                        onError={(e) => {
-                                          // Fallback if sticker image fails to load
-                                          e.target.style.display = 'none';
-                                          e.target.parentElement.innerHTML = '<div class="text-4xl">🖼️</div>';
-                                        }}
-                                      />
-                                    </div>
+                                    <StickerMessage message={m} supabase={supabase} getCustomStickerUrl={getCustomStickerUrl} />
                                   ) : (
                                     /* Regular text/media message */
                                     <div className={`rounded-2xl overflow-hidden text-sm shadow-sm ${m.media_path && !m.text ? "" : `px-3 py-2 ${mine ? "bg-pink-500/20 text-white" : "bg-white/5 text-white/90 border border-white/10"}`}`}>
@@ -3715,9 +3780,9 @@ export default function ChatPage() {
                                     <div key={sticker.id} className="relative group aspect-square">
                                       <button
                                         type="button"
-                                        onClick={async () => {
-                                          const url = customStickerUrls[sticker.id] || await getCustomStickerUrl(sticker.storage_path);
-                                          if (url) handleSendSticker(url);
+                                        onClick={() => {
+                                          // Send storage path, not URL
+                                          handleSendSticker(sticker.storage_path);
                                         }}
                                         className="w-full h-full rounded-xl hover:bg-white/10 transition-all hover:scale-110 p-2 flex items-center justify-center"
                                         title={sticker.name}
