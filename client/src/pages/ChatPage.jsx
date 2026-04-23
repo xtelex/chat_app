@@ -3479,65 +3479,132 @@ export default function ChatPage() {
               {selectedChat ? (
                 <div className="flex h-full">
                   {/* Main chat column */}
-                  <div className="flex flex-col flex-1 min-w-0">
-                  <div className="border-b border-white/10 bg-black/10 px-6 py-4 flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={handleCloseDm}
-                        className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back
-                      </button>
+                  <div className="flex flex-col min-w-0">
+                  {/* Chat header - responsive layout */}
+                  <div className="border-b border-white/10 bg-black/10 px-4 md:px-6 py-3 md:py-4">
+                    {/* Mobile layout (< 768px) */}
+                    <div className="flex md:hidden flex-col gap-3">
+                      {/* Row 1: Back button and action buttons */}
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={handleCloseDm}
+                          className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition active:bg-white/15"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          Back
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleStartCall(selectedChat)}
+                            className="inline-flex items-center justify-center rounded-xl bg-white/5 p-2.5 min-w-[40px] min-h-[40px] text-white/80 hover:bg-green-500/20 hover:text-green-400 transition active:bg-green-500/30"
+                            title="Call"
+                            aria-label="Call"
+                          >
+                            <Phone className="h-4 w-4" />
+                          </button>
 
-                      <div
-                        className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-500/50 transition"
-                        onClick={() => setShowProfilePanel((v) => !v)}
-                      >
-                        {selectedChat.avatar_url ? (
-                          <img
-                            src={selectedChat.avatar_url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <span className="text-white text-sm font-semibold">
-                            {getNameInitials(dmDisplayName || selectedChat.display_name || selectedChat.name)}
-                          </span>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => setShowNicknameEditor((v) => !v)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 min-h-[40px] text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition active:bg-white/15"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="hidden xs:inline">Nickname</span>
+                          </button>
+                        </div>
                       </div>
+                      
+                      {/* Row 2: Profile picture and name */}
+                      <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowProfilePanel((v) => !v)}>
+                        <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-pink-500/50 transition">
+                          {selectedChat.avatar_url ? (
+                            <img
+                              src={selectedChat.avatar_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <span className="text-white text-base font-semibold">
+                              {getNameInitials(dmDisplayName || selectedChat.display_name || selectedChat.name)}
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setShowProfilePanel((v) => !v)}>
-                        <p className="truncate text-sm font-semibold text-white hover:text-pink-300 transition">{dmDisplayName}</p>
-                        {selectedChat.nickname ? (
-                          <p className="truncate text-xs text-white/50">{selectedChat.display_name || " "}</p>
-                        ) : (
-                          <p className="truncate text-xs text-white/50">&nbsp;</p>
-                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-base font-semibold text-white hover:text-pink-300 transition break-words">{dmDisplayName}</p>
+                          {selectedChat.nickname ? (
+                            <p className="text-xs text-white/50 break-words">{selectedChat.display_name || " "}</p>
+                          ) : (
+                            <p className="text-xs text-white/50">&nbsp;</p>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    
+                    {/* Desktop layout (>= 768px) */}
+                    <div className="hidden md:flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={handleCloseDm}
+                          className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          Back
+                        </button>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleStartCall(selectedChat)}
-                        className="inline-flex items-center justify-center rounded-xl bg-white/5 p-2.5 text-white/80 hover:bg-green-500/20 hover:text-green-400 transition"
-                        title="Call"
-                        aria-label="Call"
-                      >
-                        <Phone className="h-4 w-4" />
-                      </button>
+                        <div
+                          className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-500/50 transition"
+                          onClick={() => setShowProfilePanel((v) => !v)}
+                        >
+                          {selectedChat.avatar_url ? (
+                            <img
+                              src={selectedChat.avatar_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <span className="text-white text-sm font-semibold">
+                              {getNameInitials(dmDisplayName || selectedChat.display_name || selectedChat.name)}
+                            </span>
+                          )}
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setShowNicknameEditor((v) => !v)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Nickname
-                      </button>
+                        <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setShowProfilePanel((v) => !v)}>
+                          <p className="truncate text-sm font-semibold text-white hover:text-pink-300 transition">{dmDisplayName}</p>
+                          {selectedChat.nickname ? (
+                            <p className="truncate text-xs text-white/50">{selectedChat.display_name || " "}</p>
+                          ) : (
+                            <p className="truncate text-xs text-white/50">&nbsp;</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartCall(selectedChat)}
+                          className="inline-flex items-center justify-center rounded-xl bg-white/5 p-2.5 text-white/80 hover:bg-green-500/20 hover:text-green-400 transition"
+                          title="Call"
+                          aria-label="Call"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowNicknameEditor((v) => !v)}
+                          className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Nickname
+                        </button>
+                      </div>
                     </div>
                   </div>
 
