@@ -4009,46 +4009,46 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar with Message Input - Compact - with padding for mobile */}
-                        <div className="flex items-center gap-2 px-2 py-2 md:px-4 md:py-3 pb-20 md:pb-3">
+                        {/* Action Toolbar with Message Input - Compact - with minimal padding */}
+                        <div className="flex items-center gap-1 px-2 py-1 md:px-4 md:py-2 pb-20 md:pb-2">
                           {/* Attachments - Plus */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Attachments"
                           >
-                            <Plus className="h-5 w-5" />
+                            <Plus className="h-3.5 w-3.5" />
                           </button>
                           
                           {/* Camera */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Camera"
                           >
-                            <Camera className="h-5 w-5" />
+                            <Camera className="h-3.5 w-3.5" />
                           </button>
                           
                           {/* Photos - Image */}
                           <button
                             type="button"
                             onClick={() => dmFileInputRef.current?.click()}
-                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Photos"
                           >
-                            <Image className="h-5 w-5" />
+                            <Image className="h-3.5 w-3.5" />
                           </button>
                           
                           {/* Voice - Microphone */}
                           <button
                             type="button"
                             onClick={handleToggleRecording}
-                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
+                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition flex-shrink-0"
                             title="Voice message"
                           >
-                            <Mic className="h-5 w-5" />
+                            <Mic className="h-3.5 w-3.5" />
                           </button>
 
                           {/* Message Input */}
@@ -4069,17 +4069,17 @@ export default function ChatPage() {
                                   e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                 }, 300);
                               }}
-                              className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[40px]"
+                              className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs md:text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[32px]"
                               style={{ fontSize: '16px' }}
                             />
                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                               <button
                                 type="button"
                                 onClick={() => setShowEmojiPicker((v) => !v)}
-                                className="p-1 text-white/50 hover:text-white/80 transition"
+                                className="p-0.5 text-white/50 hover:text-white/80 transition"
                                 title="Emoji"
                               >
-                                <Smile className="h-4 w-4" />
+                                <Smile className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           </div>
@@ -4090,10 +4090,10 @@ export default function ChatPage() {
                             onClick={handleSendDirectText}
                             whileTap={{ scale: 0.96 }}
                             disabled={!messageText.trim()}
-                            className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
+                            className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
                             title="Send"
                           >
-                            <Smile className="h-5 w-5" />
+                            <Send className="h-3.5 w-3.5" />
                           </motion.button>
                         </div>
                       </div>
