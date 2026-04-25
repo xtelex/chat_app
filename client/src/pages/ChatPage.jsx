@@ -4009,93 +4009,7 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        {/* Action Toolbar with Message Input - Fixed to bottom on mobile */}
-                        <div className="flex items-center gap-1 px-2 py-1 md:px-4 md:py-2 pb-2 bg-black/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-t-0 border-white/10 md:border-white/0">
-                          {/* Attachments - Plus */}
-                          <button
-                            type="button"
-                            onClick={() => dmFileInputRef.current?.click()}
-                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
-                            title="Attachments"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
-                          
-                          {/* Camera */}
-                          <button
-                            type="button"
-                            onClick={() => dmFileInputRef.current?.click()}
-                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
-                            title="Camera"
-                          >
-                            <Camera className="h-4 w-4" />
-                          </button>
-                          
-                          {/* Photos - Image */}
-                          <button
-                            type="button"
-                            onClick={() => dmFileInputRef.current?.click()}
-                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
-                            title="Photos"
-                          >
-                            <Image className="h-4 w-4" />
-                          </button>
-                          
-                          {/* Voice - Microphone */}
-                          <button
-                            type="button"
-                            onClick={handleToggleRecording}
-                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
-                            title="Voice message"
-                          >
-                            <Mic className="h-4 w-4" />
-                          </button>
-
-                          {/* Message Input */}
-                          <div className="relative flex-1">
-                            <textarea
-                              value={messageText}
-                              onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
-                              placeholder="Message"
-                              rows={1}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault();
-                                  handleSendDirectText();
-                                }
-                              }}
-                              onFocus={(e) => {
-                                setTimeout(() => {
-                                  e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }, 300);
-                              }}
-                              className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs md:text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[32px]"
-                              style={{ fontSize: '16px' }}
-                            />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => setShowEmojiPicker((v) => !v)}
-                                className="p-0.5 text-white/50 hover:text-white/80 transition"
-                                title="Emoji"
-                              >
-                                <Smile className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Send Button */}
-                          <motion.button
-                            type="button"
-                            onClick={handleSendDirectText}
-                            whileTap={{ scale: 0.96 }}
-                            disabled={!messageText.trim()}
-                            className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
-                            title="Send"
-                          >
-                            <Send className="h-4 w-4" />
-                          </motion.button>
-                        </div>
+                        {/* Toolbar moved to fixed position above bottom nav on mobile */}
                       </div>
 
                       {/* Old buttons removed - now integrated in toolbar above */}
@@ -4818,6 +4732,93 @@ export default function ChatPage() {
           </>
         )}
       </div>
+
+      {/* Mobile Message Toolbar - Fixed above bottom nav, only visible when chat is open */}
+      {selectedChat && (
+        <div className="md:hidden fixed bottom-16 left-0 right-0 z-35 bg-black/90 backdrop-blur-xl border-t border-white/10">
+          <div className="flex items-center gap-1 px-2 py-2">
+            {/* Attachments - Plus */}
+            <button
+              type="button"
+              onClick={() => dmFileInputRef.current?.click()}
+              className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
+              title="Attachments"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            
+            {/* Camera */}
+            <button
+              type="button"
+              onClick={() => dmFileInputRef.current?.click()}
+              className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
+              title="Camera"
+            >
+              <Camera className="h-4 w-4" />
+            </button>
+            
+            {/* Photos - Image */}
+            <button
+              type="button"
+              onClick={() => dmFileInputRef.current?.click()}
+              className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
+              title="Photos"
+            >
+              <Image className="h-4 w-4" />
+            </button>
+            
+            {/* Voice - Microphone */}
+            <button
+              type="button"
+              onClick={handleToggleRecording}
+              className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition flex-shrink-0"
+              title="Voice message"
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+
+            {/* Message Input */}
+            <div className="relative flex-1">
+              <textarea
+                value={messageText}
+                onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
+                placeholder="Message"
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendDirectText();
+                  }
+                }}
+                className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[36px]"
+                style={{ fontSize: '16px' }}
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker((v) => !v)}
+                  className="p-0.5 text-white/50 hover:text-white/80 transition"
+                  title="Emoji"
+                >
+                  <Smile className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Send Button */}
+            <motion.button
+              type="button"
+              onClick={handleSendDirectText}
+              whileTap={{ scale: 0.96 }}
+              disabled={!messageText.trim()}
+              className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
+              title="Send"
+            >
+              <Send className="h-4 w-4" />
+            </motion.button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 py-2 safe-area-pb">
