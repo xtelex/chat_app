@@ -4735,7 +4735,7 @@ export default function ChatPage() {
 
       {/* Mobile Message Toolbar - Fixed above bottom nav, only visible when chat is open */}
       {selectedChat && (
-        <div className="md:hidden fixed bottom-16 left-0 right-0 z-35 bg-black/90 backdrop-blur-xl border-t border-white/10">
+        <div className="md:hidden fixed bottom-16 left-0 right-0 z-[35] bg-black/90 backdrop-blur-xl border-t border-white/10">
           <div className="flex items-center gap-1 px-2 py-2">
             {/* Attachments - Plus */}
             <button
