@@ -42,7 +42,8 @@ import {
   PhoneCall as PhoneCallIcon,
   Sticker,
   Camera,
-  Image
+  Image,
+  Menu
 } from "lucide-react";
 
 import { isSupabaseConfigured, supabase } from "../services/supabaseClient.js";
@@ -3496,14 +3497,21 @@ export default function ChatPage() {
         {/* Mobile: show main content for non-chat sections always */}
         {currentSection === "chats" && (
           <>
-            <div className="border-b border-white/10 bg-black/20 backdrop-blur-xl px-8 py-4">
+            <div className="border-b border-white/10 bg-black/20 backdrop-blur-xl px-8 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">Chats</h2>
+              {/* Mobile burger menu */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="md:hidden text-white/70 hover:text-white transition"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto">
               {selectedChat ? (
                 <div className="flex h-full w-full">
                   {/* Main chat column */}
-                  <div className="flex flex-col flex-1 min-w-0 w-full pb-16 md:pb-0">
+                  <div className="flex flex-col flex-1 min-w-0 w-full">
                   {/* Chat header - responsive layout */}
                   <div className="border-b border-white/10 bg-black/10 px-4 md:px-6 py-3 md:py-4">
                     {/* Mobile layout (< 768px) - Two rows */}
@@ -4733,9 +4741,9 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Mobile Message Toolbar - Fixed above bottom nav, only visible when chat is open */}
+      {/* Mobile Message Toolbar - Fixed at bottom on mobile */}
       {selectedChat && (
-        <div className="md:hidden fixed bottom-16 left-0 right-0 z-[35] bg-black/90 backdrop-blur-xl border-t border-white/10">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-xl border-t border-white/10">
           <div className="flex items-center gap-1 px-2 py-2">
             {/* Attachments - Plus */}
             <button
@@ -4819,36 +4827,6 @@ export default function ChatPage() {
           </div>
         </div>
       )}
-
-      {/* Mobile bottom navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 py-2 safe-area-pb">
-        {[
-          { icon: MessageSquare, label: "Chats", section: "chats" },
-          { icon: Phone, label: "Calls", section: "calls" },
-          { icon: Users, label: "Contacts", section: "contacts" },
-          { icon: Smartphone, label: "Explore", section: "explore" },
-          { icon: Settings, label: "Settings", section: "settings" },
-        ].map(({ icon: Icon, section, label }) => (
-          <button
-            key={section}
-            type="button"
-            onClick={() => { setCurrentSection(section); if (section !== "chats") setSelectedChat(null); }}
-            className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition ${currentSection === section ? "text-pink-400" : "text-white/40 hover:text-white/70"}`}
-          >
-            <div className="relative">
-              <Icon className="h-5 w-5" />
-              {section === "chats" && Object.values(unreadCounts).reduce((a, b) => a + b, 0) > 0 && (
-                <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 flex items-center justify-center">
-                  <span className="text-white text-[8px] font-bold leading-none">
-                    {Object.values(unreadCounts).reduce((a, b) => a + b, 0) > 9 ? "9+" : Object.values(unreadCounts).reduce((a, b) => a + b, 0)}
-                  </span>
-                </div>
-              )}
-            </div>
-            <span className="text-[10px] font-medium">{label}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
