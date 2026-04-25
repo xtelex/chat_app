@@ -3503,7 +3503,7 @@ export default function ChatPage() {
               {selectedChat ? (
                 <div className="flex h-full w-full">
                   {/* Main chat column */}
-                  <div className="flex flex-col flex-1 min-w-0 w-full">
+                  <div className="flex flex-col flex-1 min-w-0 w-full pb-16 md:pb-0">
                   {/* Chat header - responsive layout */}
                   <div className="border-b border-white/10 bg-black/10 px-4 md:px-6 py-3 md:py-4">
                     {/* Mobile layout (< 768px) - Two rows */}
@@ -4010,7 +4010,7 @@ export default function ChatPage() {
                           </div>
                         )}
                         {/* Action Toolbar with Message Input - Fixed to bottom on mobile */}
-                        <div className="md:relative fixed md:static bottom-[60px] md:bottom-auto left-0 right-0 md:left-auto md:right-auto flex items-center gap-1 px-2 py-1 md:px-4 md:py-2 pb-2 bg-black/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-t-0 border-white/10 md:border-white/0 z-30">
+                        <div className="flex items-center gap-1 px-2 py-1 md:px-4 md:py-2 pb-2 bg-black/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-t-0 border-white/10 md:border-white/0">
                           {/* Attachments - Plus */}
                           <button
                             type="button"
