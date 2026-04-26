@@ -3670,7 +3670,7 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+                  <div className="flex-1 overflow-y-auto px-4 py-3 pb-24 md:pb-3 space-y-1.5">
                     {dmLoading ? (
                       <div className="text-sm text-white/60">Loading messages…</div>                    ) : dmError ? (
                       <div className="text-sm text-red-200/80 whitespace-pre-line">{dmError}</div>
@@ -3821,7 +3821,7 @@ export default function ChatPage() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  <div className="border-t border-white/10 bg-black/20 px-6 py-4">
+                  <div className="hidden md:block border-t border-white/10 bg-black/20 px-6 py-4">
                     {/* Typing indicator */}
                     {Object.keys(typingUsers).length > 0 && (
                       <div className="flex items-center gap-2 px-1 pb-2">
@@ -4742,9 +4742,9 @@ export default function ChatPage() {
       </div>
 
       {/* Mobile Message Toolbar - Fixed at bottom on mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-xl border-t border-white/10">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-white/10 shadow-2xl">
         {selectedChat ? (
-          <div className="flex items-center gap-1 px-2 py-2">
+          <div className="flex items-center gap-1 px-2 py-3 safe-area-inset-bottom">
             {/* Attachments - Plus */}
             <button
               type="button"
