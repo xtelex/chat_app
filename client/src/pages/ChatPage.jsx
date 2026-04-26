@@ -5025,6 +5025,28 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
+      {/* Mobile Typing Indicator - Shows above toolbar */}
+      <AnimatePresence>
+        {Object.keys(typingUsers).length > 0 && selectedChat && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed bottom-20 left-0 right-0 z-40 bg-black/80 backdrop-blur-sm px-4 py-2"
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="h-2 w-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-2 w-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-2 w-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span className="text-xs text-white/60">{dmDisplayName} is typing…</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Message Toolbar - Fixed at bottom on mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-white/10 shadow-2xl">
         {selectedChat ? (
