@@ -4745,6 +4745,181 @@ export default function ChatPage() {
         )}
       </div>
 
+      {/* Mobile Emoji & Sticker Picker - Shows above toolbar */}
+      <AnimatePresence>
+        {showEmojiPicker && selectedChat && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="md:hidden fixed bottom-20 left-0 right-0 z-40 bg-slate-900/98 backdrop-blur-xl border-t border-white/10 shadow-2xl max-h-[60vh] overflow-hidden"
+          >
+            <div className="flex flex-col h-full">
+              {/* Tabs */}
+              <div className="flex border-b border-white/10 bg-black/20">
+                <button
+                  type="button"
+                  onClick={() => setShowStickerPicker(false)}
+                  className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
+                    !showStickerPicker 
+                      ? "text-pink-400 border-b-2 border-pink-400" 
+                      : "text-white/50 hover:text-white/70"
+                  }`}
+                >
+                  Emojis
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowStickerPicker(true)}
+                  className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
+                    showStickerPicker 
+                      ? "text-pink-400 border-b-2 border-pink-400" 
+                      : "text-white/50 hover:text-white/70"
+                  }`}
+                >
+                  Stickers
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {!showStickerPicker ? (
+                  /* Emoji Grid */
+                  <div className="grid grid-cols-8 gap-2">
+                    {[
+                      "😀","😂","🥹","😍","🥰","😎","🤩","😜",
+                      "😅","🤣","😇","🥳","😏","😒","😔","😭",
+                      "😤","🤯","🥺","😱","🤔","🤫","🤭","😶",
+                      "👍","👎","❤️","🔥","💯","✨","🎉","👏",
+                      "🙏","💪","🤝","👀","💀","😈","🤡","👻",
+                      "🐶","🐱","🦊","🐻","🐼","🐨","🦁","🐸",
+                      "🍕","🍔","🍟","🌮","🍜","🍣","🍩","🎂",
+                      "⚽","🏀","🎮","🎵","🎸","🎤","📸","🚀",
+                      "🌈","⭐","🌙","☀️","⛅","🌊","🌸","🌺",
+                      "🎨","🎭","🎪","🎬","📱","💻","⌚","📷"
+                    ].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => {
+                          setMessageText((prev) => prev + emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        className="text-3xl hover:scale-125 active:scale-110 transition-transform p-2 rounded-lg hover:bg-white/10 active:bg-white/20"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  /* Sticker Grid */
+                  <div className="space-y-4">
+                    {/* Default Stickers */}
+                    <div>
+                      <h3 className="text-xs font-semibold text-white/60 mb-3 uppercase tracking-wide">Default Stickers</h3>
+                      <div className="grid grid-cols-4 gap-3">
+                        {getAllStickers().map((sticker) => (
+                          <button
+                            key={sticker.id}
+                            type="button"
+                            onClick={() => {
+                              handleSendSticker(sticker.url);
+                              setShowEmojiPicker(false);
+                              setShowStickerPicker(false);
+                            }}
+                            className="aspect-square rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center"
+                            title={sticker.name}
+                          >
+                            <img 
+                              src={sticker.url} 
+                              alt={sticker.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = `<span class="text-4xl">${sticker.emoji}</span>`;
+                              }}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Stickers */}
+                    <div>
+                      <h3 className="text-xs font-semibold text-white/60 mb-3 uppercase tracking-wide">My Stickers</h3>
+                      <div className="grid grid-cols-4 gap-3">
+                        {/* Add custom sticker button */}
+                        <button
+                          type="button"
+                          onClick={() => customStickerInputRef.current?.click()}
+                          disabled={uploadingSticker}
+                          className="aspect-square rounded-xl border-2 border-dashed border-white/20 hover:border-pink-500/50 hover:bg-pink-500/10 active:bg-pink-500/20 transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Upload custom sticker"
+                        >
+                          {uploadingSticker ? (
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/20 border-t-pink-500"></div>
+                          ) : (
+                            <Plus className="h-10 w-10 text-white/40 group-hover:text-pink-400 transition" />
+                          )}
+                        </button>
+
+                        {/* Custom stickers */}
+                        {customStickers.map((sticker) => {
+                          const stickerUrl = customStickerUrls[sticker.id];
+                          return (
+                            <div key={sticker.id} className="relative group aspect-square">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleSendSticker(sticker.storage_path);
+                                  setShowEmojiPicker(false);
+                                  setShowStickerPicker(false);
+                                }}
+                                className="w-full h-full rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center"
+                                title={sticker.name}
+                              >
+                                {stickerUrl ? (
+                                  <img 
+                                    src={stickerUrl}
+                                    alt={sticker.name}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.parentElement.innerHTML = `<span class="text-2xl">${sticker.emoji_fallback || '🎨'}</span>`;
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="animate-pulse bg-white/10 w-full h-full rounded-lg flex items-center justify-center">
+                                    <span className="text-2xl">{sticker.emoji_fallback || '🎨'}</span>
+                                  </div>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('Delete this sticker?')) {
+                                    handleDeleteCustomSticker(sticker.id, sticker.storage_path);
+                                  }
+                                }}
+                                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                title="Delete sticker"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Message Toolbar - Fixed at bottom on mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-white/10 shadow-2xl">
         {selectedChat ? (
