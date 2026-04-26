@@ -4753,11 +4753,12 @@ export default function ChatPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="md:hidden fixed bottom-20 left-0 right-0 z-40 bg-slate-900/98 backdrop-blur-xl border-t border-white/10 shadow-2xl max-h-[60vh] overflow-hidden"
+            className="md:hidden fixed bottom-20 left-0 right-0 z-40 bg-slate-900/98 backdrop-blur-xl border-t border-white/10 shadow-2xl"
+            style={{ height: '65vh', maxHeight: '500px' }}
           >
             <div className="flex flex-col h-full">
               {/* Tabs */}
-              <div className="flex border-b border-white/10 bg-black/20">
+              <div className="flex border-b border-white/10 bg-black/20 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowStickerPicker(false)}
@@ -4767,7 +4768,7 @@ export default function ChatPage() {
                       : "text-white/50 hover:text-white/70"
                   }`}
                 >
-                  Emojis
+                  😀 Emojis
                 </button>
                 <button
                   type="button"
@@ -4778,72 +4779,78 @@ export default function ChatPage() {
                       : "text-white/50 hover:text-white/70"
                   }`}
                 >
-                  Stickers
+                  🎨 Stickers
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-4">
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {!showStickerPicker ? (
                   /* Emoji Grid */
-                  <div className="grid grid-cols-8 gap-2">
-                    {[
-                      "😀","😂","🥹","😍","🥰","😎","🤩","😜",
-                      "😅","🤣","😇","🥳","😏","😒","😔","😭",
-                      "😤","🤯","🥺","😱","🤔","🤫","🤭","😶",
-                      "👍","👎","❤️","🔥","💯","✨","🎉","👏",
-                      "🙏","💪","🤝","👀","💀","😈","🤡","👻",
-                      "🐶","🐱","🦊","🐻","🐼","🐨","🦁","🐸",
-                      "🍕","🍔","🍟","🌮","🍜","🍣","🍩","🎂",
-                      "⚽","🏀","🎮","🎵","🎸","🎤","📸","🚀",
-                      "🌈","⭐","🌙","☀️","⛅","🌊","🌸","🌺",
-                      "🎨","🎭","🎪","🎬","📱","💻","⌚","📷"
-                    ].map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => {
-                          setMessageText((prev) => prev + emoji);
-                          setShowEmojiPicker(false);
-                        }}
-                        className="text-3xl hover:scale-125 active:scale-110 transition-transform p-2 rounded-lg hover:bg-white/10 active:bg-white/20"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
+                  <div className="p-4">
+                    <div className="grid grid-cols-8 gap-2">
+                      {[
+                        "😀","😂","🥹","😍","🥰","😎","🤩","😜",
+                        "😅","🤣","😇","🥳","😏","😒","😔","😭",
+                        "😤","🤯","🥺","😱","🤔","🤫","🤭","😶",
+                        "👍","👎","❤️","🔥","💯","✨","🎉","👏",
+                        "🙏","💪","🤝","👀","💀","😈","🤡","👻",
+                        "🐶","🐱","🦊","🐻","🐼","🐨","🦁","🐸",
+                        "🍕","🍔","🍟","🌮","🍜","🍣","🍩","🎂",
+                        "⚽","🏀","🎮","🎵","🎸","🎤","📸","🚀",
+                        "🌈","⭐","🌙","☀️","⛅","🌊","🌸","🌺",
+                        "🎨","🎭","🎪","🎬","📱","💻","⌚","📷",
+                        "🎯","🎲","🧩","🎰","🎳","🎪","🎢","🎡",
+                        "🏆","🥇","🥈","🥉","🏅","🎖️","🏵️","🎗️"
+                      ].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => {
+                            setMessageText((prev) => prev + emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                          className="text-3xl hover:scale-125 active:scale-110 transition-transform p-2 rounded-lg hover:bg-white/10 active:bg-white/20"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   /* Sticker Grid */
-                  <div className="space-y-4">
+                  <div className="p-4 space-y-6">
                     {/* Default Stickers */}
-                    <div>
-                      <h3 className="text-xs font-semibold text-white/60 mb-3 uppercase tracking-wide">Default Stickers</h3>
-                      <div className="grid grid-cols-4 gap-3">
-                        {getAllStickers().map((sticker) => (
-                          <button
-                            key={sticker.id}
-                            type="button"
-                            onClick={() => {
-                              handleSendSticker(sticker.url);
-                              setShowEmojiPicker(false);
-                              setShowStickerPicker(false);
-                            }}
-                            className="aspect-square rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center"
-                            title={sticker.name}
-                          >
-                            <img 
-                              src={sticker.url} 
-                              alt={sticker.name}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = `<span class="text-4xl">${sticker.emoji}</span>`;
+                    {getAllStickers().length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-semibold text-white/60 mb-3 uppercase tracking-wide">Default Stickers</h3>
+                        <div className="grid grid-cols-4 gap-3">
+                          {getAllStickers().map((sticker) => (
+                            <button
+                              key={sticker.id}
+                              type="button"
+                              onClick={() => {
+                                handleSendSticker(sticker.url);
+                                setShowEmojiPicker(false);
+                                setShowStickerPicker(false);
                               }}
-                            />
-                          </button>
-                        ))}
+                              className="aspect-square rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center bg-white/5"
+                              title={sticker.name}
+                            >
+                              <img 
+                                src={sticker.url} 
+                                alt={sticker.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.innerHTML = `<span class="text-4xl">${sticker.emoji}</span>`;
+                                }}
+                              />
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Custom Stickers */}
                     <div>
@@ -4876,7 +4883,7 @@ export default function ChatPage() {
                                   setShowEmojiPicker(false);
                                   setShowStickerPicker(false);
                                 }}
-                                className="w-full h-full rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center"
+                                className="w-full h-full rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center bg-white/5"
                                 title={sticker.name}
                               >
                                 {stickerUrl ? (
@@ -4897,12 +4904,13 @@ export default function ChatPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   if (confirm('Delete this sticker?')) {
                                     handleDeleteCustomSticker(sticker.id, sticker.storage_path);
                                   }
                                 }}
-                                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
                                 title="Delete sticker"
                               >
                                 <X className="h-3 w-3" />
@@ -4911,6 +4919,12 @@ export default function ChatPage() {
                           );
                         })}
                       </div>
+                      
+                      {customStickers.length === 0 && (
+                        <p className="text-center text-white/40 text-sm mt-4">
+                          No custom stickers yet. Tap + to add one!
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
