@@ -3879,6 +3879,28 @@ export default function ChatPage() {
                     />
 
                     <div className="flex items-end gap-2 md:gap-3">
+                      <button
+                        type="button"
+                        onClick={() => dmFileInputRef.current?.click()}
+                        className="rounded-xl bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white transition flex-shrink-0"
+                        title="Attach file"
+                      >
+                        <Paperclip className="h-5 w-5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowStickerPicker((v) => !v)}
+                        className={`rounded-xl p-2.5 transition flex-shrink-0 ${
+                          showStickerPicker
+                            ? "bg-pink-500/20 text-pink-300"
+                            : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                        }`}
+                        title="Stickers"
+                      >
+                        <Sticker className="h-5 w-5" />
+                      </button>
+
                       <div className="flex-1 relative">
                         {/* Hidden file input for custom sticker upload */}
                         <input
@@ -4022,7 +4044,58 @@ export default function ChatPage() {
                           </div>
                         )}
                         {/* Toolbar moved to fixed position above bottom nav on mobile */}
+                        
+                        {/* Desktop Textarea Input */}
+                        <textarea
+                          value={messageText}
+                          onChange={(e) => { setMessageText(e.target.value); sendTypingIndicator(); }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendDirectText();
+                            }
+                          }}
+                          placeholder="Type a message..."
+                          rows={1}
+                          className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:border-white/20 focus:bg-white/10 transition"
+                        />
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker((v) => !v)}
+                        className={`rounded-xl p-2.5 transition flex-shrink-0 ${
+                          showEmojiPicker
+                            ? "bg-yellow-500/20 text-yellow-300"
+                            : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                        }`}
+                        title="Emoji"
+                      >
+                        <Smile className="h-5 w-5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleToggleRecording}
+                        className={`rounded-xl p-2.5 transition flex-shrink-0 ${
+                          recording
+                            ? "bg-red-500/20 text-red-300 animate-pulse"
+                            : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                        }`}
+                        title="Voice message"
+                      >
+                        <Mic className="h-5 w-5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSendDirectText}
+                        disabled={!messageText.trim()}
+                        className="rounded-xl bg-pink-500/20 px-4 py-2.5 text-pink-300 hover:bg-pink-500/30 hover:text-pink-200 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                        title="Send"
+                      >
+                        <Send className="h-5 w-5" />
+                      </button>
 
                       {/* Old buttons removed - now integrated in toolbar above */}
                     </div>
