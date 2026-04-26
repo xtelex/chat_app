@@ -4854,24 +4854,24 @@ export default function ChatPage() {
                     handleSendDirectText();
                   }
                 }}
-                className="w-full resize-none rounded-full border border-white/10 bg-white/10 pl-5 pr-16 py-2.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
+                className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-5 py-2.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
                 style={{ fontSize: '16px' }}
               />
-              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker((v) => !v)}
-                  className={`p-1.5 transition-all rounded-full ${
-                    showEmojiPicker 
-                      ? "text-yellow-400 bg-yellow-500/20" 
-                      : "text-white/50 hover:text-white/80 active:bg-yellow-500/20 active:text-yellow-400"
-                  }`}
-                  title="Emoji"
-                >
-                  <Smile className="h-5 w-5" />
-                </button>
-              </div>
             </motion.div>
+
+            {/* Emoji Button - Outside input */}
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((v) => !v)}
+              className={`h-11 w-11 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                showEmojiPicker 
+                  ? "text-yellow-400 bg-yellow-500/20" 
+                  : "bg-white/10 text-white/70 hover:text-white hover:bg-white/20 active:bg-yellow-500/20 active:text-yellow-400"
+              }`}
+              title="Emoji"
+            >
+              <Smile className="h-5 w-5" />
+            </button>
 
             {/* Send Button */}
             <motion.button
