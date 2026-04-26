@@ -4748,14 +4748,14 @@ export default function ChatPage() {
       {/* Mobile Message Toolbar - Fixed at bottom on mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-white/10 shadow-2xl">
         {selectedChat ? (
-          <div className="flex items-center gap-2 px-3 py-4 safe-area-inset-bottom">
+          <div className="flex items-center gap-1.5 px-2 py-4 safe-area-inset-bottom max-w-full">
             {/* Left Arrow - Shows when input is focused */}
             <AnimatePresence>
               {isInputFocused && (
                 <motion.button
-                  initial={{ opacity: 0, scale: 0.8, x: -10 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, x: -10 }}
+                  initial={{ opacity: 0, scale: 0.8, width: 0 }}
+                  animate={{ opacity: 1, scale: 1, width: 'auto' }}
+                  exit={{ opacity: 0, scale: 0.8, width: 0 }}
                   transition={{ duration: 0.2 }}
                   type="button"
                   onClick={() => {
@@ -4776,58 +4776,58 @@ export default function ChatPage() {
                 <>
                   {/* Attachments - Plus */}
                   <motion.button
-                    initial={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 1, scale: 1, width: 'auto' }}
+                    exit={{ opacity: 0, scale: 0.5, width: 0 }}
+                    transition={{ duration: 0.15 }}
                     type="button"
                     onClick={() => dmFileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 active:bg-pink-500/30 active:text-pink-300 active:scale-95 transition-all flex-shrink-0"
+                    className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 active:bg-pink-500/30 active:text-pink-300 active:scale-95 transition-all flex-shrink-0"
                     title="Attachments"
                   >
-                    <Plus className="h-5 w-5" />
+                    <Plus className="h-4.5 w-4.5" />
                   </motion.button>
                   
                   {/* Camera */}
                   <motion.button
-                    initial={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    transition={{ duration: 0.2, delay: 0.05 }}
+                    initial={{ opacity: 1, scale: 1, width: 'auto' }}
+                    exit={{ opacity: 0, scale: 0.5, width: 0 }}
+                    transition={{ duration: 0.15, delay: 0.03 }}
                     type="button"
                     onClick={() => dmFileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 active:bg-blue-500/30 active:text-blue-300 active:scale-95 transition-all flex-shrink-0"
+                    className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 active:bg-blue-500/30 active:text-blue-300 active:scale-95 transition-all flex-shrink-0"
                     title="Camera"
                   >
-                    <Camera className="h-5 w-5" />
+                    <Camera className="h-4.5 w-4.5" />
                   </motion.button>
                   
                   {/* Photos - Image */}
                   <motion.button
-                    initial={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    transition={{ duration: 0.2, delay: 0.1 }}
+                    initial={{ opacity: 1, scale: 1, width: 'auto' }}
+                    exit={{ opacity: 0, scale: 0.5, width: 0 }}
+                    transition={{ duration: 0.15, delay: 0.06 }}
                     type="button"
                     onClick={() => dmFileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 active:bg-purple-500/30 active:text-purple-300 active:scale-95 transition-all flex-shrink-0"
+                    className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 active:bg-purple-500/30 active:text-purple-300 active:scale-95 transition-all flex-shrink-0"
                     title="Photos"
                   >
-                    <Image className="h-5 w-5" />
+                    <Image className="h-4.5 w-4.5" />
                   </motion.button>
                   
                   {/* Voice - Microphone */}
                   <motion.button
-                    initial={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    transition={{ duration: 0.2, delay: 0.15 }}
+                    initial={{ opacity: 1, scale: 1, width: 'auto' }}
+                    exit={{ opacity: 0, scale: 0.5, width: 0 }}
+                    transition={{ duration: 0.15, delay: 0.09 }}
                     type="button"
                     onClick={handleToggleRecording}
-                    className={`h-11 w-11 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                    className={`h-10 w-10 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
                       recording 
                         ? "bg-red-500/30 text-red-300 animate-pulse" 
                         : "bg-white/10 text-white/70 hover:text-white hover:bg-white/20 active:bg-red-500/30 active:text-red-300 active:scale-95"
                     }`}
                     title="Voice message"
                   >
-                    <Mic className="h-5 w-5" />
+                    <Mic className="h-4.5 w-4.5" />
                   </motion.button>
                 </>
               )}
@@ -4835,7 +4835,7 @@ export default function ChatPage() {
 
             {/* Message Input - Expands when focused */}
             <motion.div 
-              className="relative flex-1"
+              className="flex-1 min-w-0"
               animate={{ 
                 flex: isInputFocused ? 1 : 1 
               }}
@@ -4854,7 +4854,7 @@ export default function ChatPage() {
                     handleSendDirectText();
                   }
                 }}
-                className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-5 py-2.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
+                className="w-full resize-none rounded-full border border-white/10 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
                 style={{ fontSize: '16px' }}
               />
             </motion.div>
@@ -4863,14 +4863,14 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => setShowEmojiPicker((v) => !v)}
-              className={`h-11 w-11 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+              className={`h-10 w-10 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
                 showEmojiPicker 
                   ? "text-yellow-400 bg-yellow-500/20" 
                   : "bg-white/10 text-white/70 hover:text-white hover:bg-white/20 active:bg-yellow-500/20 active:text-yellow-400"
               }`}
               title="Emoji"
             >
-              <Smile className="h-5 w-5" />
+              <Smile className="h-4.5 w-4.5" />
             </button>
 
             {/* Send Button */}
@@ -4879,10 +4879,10 @@ export default function ChatPage() {
               onClick={handleSendDirectText}
               whileTap={{ scale: 0.92 }}
               disabled={!messageText.trim()}
-              className="h-11 w-11 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-300 hover:bg-pink-500/30 hover:text-pink-200 active:bg-pink-500/40 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+              className="h-10 w-10 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-300 hover:bg-pink-500/30 hover:text-pink-200 active:bg-pink-500/40 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
               title="Send"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4.5 w-4.5" />
             </motion.button>
           </div>
         ) : (
