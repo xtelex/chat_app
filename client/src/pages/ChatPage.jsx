@@ -3825,7 +3825,7 @@ export default function ChatPage() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  <div className="border-t border-white/10 bg-black/20 px-6 py-4 hidden md:flex md:flex-col">
+                  <div className="hidden sm:block border-t border-white/10 bg-black/20 px-6 py-4">
                     {/* Typing indicator */}
                     {Object.keys(typingUsers).length > 0 && (
                       <div className="flex items-center gap-2 px-1 pb-2">
