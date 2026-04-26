@@ -4854,7 +4854,7 @@ export default function ChatPage() {
                     handleSendDirectText();
                   }
                 }}
-                className="w-full resize-none rounded-full border border-white/10 bg-white/10 pl-4 pr-14 py-2.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
+                className="w-full resize-none rounded-full border border-white/10 bg-white/10 pl-5 pr-16 py-2.5 text-sm text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-white/30 min-h-[44px]"
                 style={{ fontSize: '16px' }}
               />
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
