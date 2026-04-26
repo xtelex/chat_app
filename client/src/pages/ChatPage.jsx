@@ -4821,7 +4821,7 @@ export default function ChatPage() {
                   /* Sticker Grid */
                   <div className="p-4 space-y-6">
                     {/* Default Stickers */}
-                    {getAllStickers().length > 0 && (
+                    {getAllStickers().length > 0 ? (
                       <div>
                         <h3 className="text-xs font-semibold text-white/60 mb-3 uppercase tracking-wide">Default Stickers</h3>
                         <div className="grid grid-cols-4 gap-3">
@@ -4829,26 +4829,37 @@ export default function ChatPage() {
                             <button
                               key={sticker.id}
                               type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Sticker clicked:', sticker.name);
                                 handleSendSticker(sticker.url);
                                 setShowEmojiPicker(false);
                                 setShowStickerPicker(false);
                               }}
-                              className="aspect-square rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center bg-white/5"
+                              className="aspect-square rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-3 flex items-center justify-center bg-white/5 cursor-pointer touch-manipulation"
                               title={sticker.name}
                             >
                               <img 
                                 src={sticker.url} 
                                 alt={sticker.name}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-contain pointer-events-none"
                                 onError={(e) => {
+                                  console.error('Sticker image failed to load:', sticker.url);
                                   e.target.style.display = 'none';
-                                  e.target.parentElement.innerHTML = `<span class="text-4xl">${sticker.emoji}</span>`;
+                                  const fallback = document.createElement('span');
+                                  fallback.className = 'text-4xl';
+                                  fallback.textContent = sticker.emoji;
+                                  e.target.parentElement.appendChild(fallback);
                                 }}
                               />
                             </button>
                           ))}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-white/40 text-sm">No default stickers available</p>
                       </div>
                     )}
 
@@ -4878,22 +4889,28 @@ export default function ChatPage() {
                             <div key={sticker.id} className="relative group aspect-square">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('Custom sticker clicked:', sticker.name);
                                   handleSendSticker(sticker.storage_path);
                                   setShowEmojiPicker(false);
                                   setShowStickerPicker(false);
                                 }}
-                                className="w-full h-full rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-2 flex items-center justify-center bg-white/5"
+                                className="w-full h-full rounded-xl hover:bg-white/10 active:bg-white/20 transition-all hover:scale-105 active:scale-95 p-3 flex items-center justify-center bg-white/5 cursor-pointer touch-manipulation"
                                 title={sticker.name}
                               >
                                 {stickerUrl ? (
                                   <img 
                                     src={stickerUrl}
                                     alt={sticker.name}
-                                    className="w-full h-full object-contain"
+                                    className="w-full h-full object-contain pointer-events-none"
                                     onError={(e) => {
                                       e.target.style.display = 'none';
-                                      e.target.parentElement.innerHTML = `<span class="text-2xl">${sticker.emoji_fallback || '🎨'}</span>`;
+                                      const fallback = document.createElement('span');
+                                      fallback.className = 'text-2xl';
+                                      fallback.textContent = sticker.emoji_fallback || '🎨';
+                                      e.target.parentElement.appendChild(fallback);
                                     }}
                                   />
                                 ) : (
@@ -4905,15 +4922,16 @@ export default function ChatPage() {
                               <button
                                 type="button"
                                 onClick={(e) => {
+                                  e.preventDefault();
                                   e.stopPropagation();
                                   if (confirm('Delete this sticker?')) {
                                     handleDeleteCustomSticker(sticker.id, sticker.storage_path);
                                   }
                                 }}
-                                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10 cursor-pointer touch-manipulation"
                                 title="Delete sticker"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-3 w-3 pointer-events-none" />
                               </button>
                             </div>
                           );
