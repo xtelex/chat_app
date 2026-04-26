@@ -2979,25 +2979,55 @@ export default function ChatPage() {
     { icon: Settings, label: "Setting", section: "settings" },
   ];
 
+  // Theme-aware color classes
+  const isLight = theme === 'light';
+  const textPrimary = isLight ? 'text-gray-900' : 'text-white';
+  const textSecondary = isLight ? 'text-gray-600' : 'text-white/60';
+  const textTertiary = isLight ? 'text-gray-400' : 'text-white/40';
+  const bgPrimary = isLight ? 'bg-white' : 'bg-black/20';
+  const bgSecondary = isLight ? 'bg-gray-50' : 'bg-white/5';
+  const bgHover = isLight ? 'hover:bg-gray-100' : 'hover:bg-white/10';
+  const border = isLight ? 'border-gray-200' : 'border-white/10';
+  const inputBg = isLight ? 'bg-gray-100' : 'bg-white/10';
+  const inputBorder = isLight ? 'border-gray-300' : 'border-white/10';
+  const inputText = isLight ? 'text-gray-900' : 'text-white';
+  const placeholderText = isLight ? 'placeholder-gray-400' : 'placeholder-white/50';
+
   return (
-    <div className="relative isolate flex h-dvh w-full overflow-hidden" style={{
+    <div className={`relative isolate flex h-dvh w-full overflow-hidden ${
+      theme === 'light' 
+        ? 'bg-gradient-to-br from-gray-50 via-white to-gray-100' 
+        : ''
+    }`} style={theme === 'light' ? {} : {
       background: 'linear-gradient(135deg, #030712 0%, #0f172a 50%, #000000 100%)',
       backgroundAttachment: 'fixed'
     }}>
       {/* Animated gradient blobs */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-15" style={{
-          background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)',
+        <div className={`absolute -top-40 -right-40 w-96 h-96 rounded-full ${
+          theme === 'light' ? 'opacity-5' : 'opacity-15'
+        }`} style={{
+          background: theme === 'light' 
+            ? 'radial-gradient(circle, #ec4899 0%, transparent 70%)' 
+            : 'radial-gradient(circle, #ec4899 0%, transparent 70%)',
           filter: 'blur(60px)',
           animation: 'pulse 4s ease-in-out infinite'
         }} />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-15" style={{
-          background: 'radial-gradient(circle, #d946ef 0%, transparent 70%)',
+        <div className={`absolute -bottom-40 -left-40 w-96 h-96 rounded-full ${
+          theme === 'light' ? 'opacity-5' : 'opacity-15'
+        }`} style={{
+          background: theme === 'light'
+            ? 'radial-gradient(circle, #d946ef 0%, transparent 70%)'
+            : 'radial-gradient(circle, #d946ef 0%, transparent 70%)',
           filter: 'blur(60px)',
           animation: 'pulse 4s ease-in-out infinite 1s'
         }} />
-        <div className="absolute top-1/3 left-1/3 w-80 h-80 rounded-full opacity-10" style={{
-          background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)',
+        <div className={`absolute top-1/3 left-1/3 w-80 h-80 rounded-full ${
+          theme === 'light' ? 'opacity-3' : 'opacity-10'
+        }`} style={{
+          background: theme === 'light'
+            ? 'radial-gradient(circle, #a855f7 0%, transparent 70%)'
+            : 'radial-gradient(circle, #a855f7 0%, transparent 70%)',
           filter: 'blur(60px)',
           animation: 'pulse 4s ease-in-out infinite 2s'
         }} />
@@ -4640,19 +4670,19 @@ export default function ChatPage() {
 
         {currentSection === "settings" && (
           <>
-            <div className="border-b border-white/10 bg-black/20 backdrop-blur-xl px-8 py-4">
-              <h2 className="text-xl font-bold text-white">Settings</h2>
+            <div className={`border-b ${border} ${bgPrimary} backdrop-blur-xl px-8 py-4`}>
+              <h2 className={`text-xl font-bold ${textPrimary}`}>Settings</h2>
             </div>
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-3">
 
               {/* Notifications */}
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                  <Bell className="h-4 w-4 text-white/60" />
+              <div className={`flex items-center gap-4 p-4 rounded-xl ${bgSecondary} border ${border}`}>
+                <div className={`h-9 w-9 rounded-xl ${bgSecondary} flex items-center justify-center flex-shrink-0`}>
+                  <Bell className={`h-4 w-4 ${textSecondary}`} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-semibold text-sm">Notifications</p>
-                  <p className="text-xs text-white/50">
+                  <p className={`${textPrimary} font-semibold text-sm`}>Notifications</p>
+                  <p className={`text-xs ${textSecondary}`}>
                     {notifPermission === "granted" ? "Enabled" : notifPermission === "denied" ? "Blocked by browser" : "Not enabled"}
                   </p>
                 </div>
@@ -4667,14 +4697,14 @@ export default function ChatPage() {
               </div>
 
               {/* Theme */}
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className={`p-4 rounded-xl ${bgSecondary} border ${border}`}>
                 <div className="flex items-center gap-4 mb-3">
-                  <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <Palette className="h-4 w-4 text-white/60" />
+                  <div className={`h-9 w-9 rounded-xl ${bgSecondary} flex items-center justify-center flex-shrink-0`}>
+                    <Palette className={`h-4 w-4 ${textSecondary}`} />
                   </div>
                   <div>
-                    <p className="text-white font-semibold text-sm">Theme</p>
-                    <p className="text-xs text-white/50 capitalize">{theme}</p>
+                    <p className={`${textPrimary} font-semibold text-sm`}>Theme</p>
+                    <p className={`text-xs ${textSecondary} capitalize`}>{theme}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 ml-13">
@@ -4682,7 +4712,7 @@ export default function ChatPage() {
                     <button
                       key={t}
                       onClick={() => applyTheme(t)}
-                      className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition ${theme === t ? "bg-pink-500/30 text-pink-200 border border-pink-500/40" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition ${theme === t ? "bg-pink-500/30 text-pink-200 border border-pink-500/40" : `${bgSecondary} ${textSecondary} ${bgHover}`}`}
                     >
                       {t}
                     </button>
@@ -4691,16 +4721,16 @@ export default function ChatPage() {
               </div>
 
               {/* Storage */}
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className={`p-4 rounded-xl ${bgSecondary} border ${border}`}>
                 <div className="flex items-center gap-4 mb-3">
-                  <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <HardDrive className="h-4 w-4 text-white/60" />
+                  <div className={`h-9 w-9 rounded-xl ${bgSecondary} flex items-center justify-center flex-shrink-0`}>
+                    <HardDrive className={`h-4 w-4 ${textSecondary}`} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-white font-semibold text-sm">Storage</p>
-                    <p className="text-xs text-white/50">{cacheSize ? `Used: ${cacheSize}` : "Tap to check usage"}</p>
+                    <p className={`${textPrimary} font-semibold text-sm`}>Storage</p>
+                    <p className={`text-xs ${textSecondary}`}>{cacheSize ? `Used: ${cacheSize}` : "Tap to check usage"}</p>
                   </div>
-                  <button onClick={estimateCacheSize} className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white/70 rounded-lg text-xs font-semibold transition">
+                  <button onClick={estimateCacheSize} className={`px-3 py-1.5 ${bgSecondary} ${bgHover} ${textSecondary} rounded-lg text-xs font-semibold transition`}>
                     Check
                   </button>
                 </div>
@@ -4710,21 +4740,21 @@ export default function ChatPage() {
               </div>
 
               {/* About */}
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className={`p-4 rounded-xl ${bgSecondary} border ${border}`}>
                 <div className="flex items-center gap-4">
-                  <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <Info className="h-4 w-4 text-white/60" />
+                  <div className={`h-9 w-9 rounded-xl ${bgSecondary} flex items-center justify-center flex-shrink-0`}>
+                    <Info className={`h-4 w-4 ${textSecondary}`} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-white font-semibold text-sm">About</p>
-                    <p className="text-xs text-white/50">My Chat App • v1.0.0</p>
+                    <p className={`${textPrimary} font-semibold text-sm`}>About</p>
+                    <p className={`text-xs ${textSecondary}`}>My Chat App • v1.0.0</p>
                   </div>
-                  <button onClick={() => setShowAbout((v) => !v)} className="text-xs text-white/40 hover:text-white/70 transition">
+                  <button onClick={() => setShowAbout((v) => !v)} className={`text-xs ${textTertiary} hover:${textSecondary} transition`}>
                     {showAbout ? "Hide" : "Details"}
                   </button>
                 </div>
                 {showAbout && (
-                  <div className="mt-3 pt-3 border-t border-white/10 space-y-1 text-xs text-white/50">
+                  <div className={`mt-3 pt-3 border-t ${border} space-y-1 text-xs ${textSecondary}`}>
                     <p>Built with React 18 + Vite</p>
                     <p>Backend: Node.js + Express</p>
                     <p>Database: Supabase (Postgres)</p>
@@ -4734,14 +4764,14 @@ export default function ChatPage() {
               </div>
 
               {/* Display Name */}
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className={`p-4 rounded-xl ${bgSecondary} border ${border}`}>
                 <div className="flex items-center gap-4">
-                  <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <Pencil className="h-4 w-4 text-white/60" />
+                  <div className={`h-9 w-9 rounded-xl ${bgSecondary} flex items-center justify-center flex-shrink-0`}>
+                    <Pencil className={`h-4 w-4 ${textSecondary}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm">Display Name</p>
-                    <p className="text-xs text-white/50 truncate">{user?.user_metadata?.full_name || user?.email?.split("@")[0]}</p>
+                    <p className={`${textPrimary} font-semibold text-sm`}>Display Name</p>
+                    <p className={`text-xs ${textSecondary} truncate`}>{user?.user_metadata?.full_name || user?.email?.split("@")[0]}</p>
                   </div>
                   <button onClick={() => { setDisplayNameDraft(user?.user_metadata?.full_name || user?.email?.split("@")[0] || ""); setEditingDisplayName((v) => !v); }}
                     className="text-xs text-pink-400 hover:text-pink-300 font-semibold transition">
@@ -4755,7 +4785,7 @@ export default function ChatPage() {
                       onChange={(e) => setDisplayNameDraft(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleSaveDisplayName(); }}
                       placeholder="Enter display name"
-                      className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-pink-500/50"
+                      className={`flex-1 rounded-xl border ${inputBorder} ${inputBg} px-3 py-2 text-sm ${inputText} ${placeholderText} outline-none focus:border-pink-500/50`}
                       autoFocus
                     />
                     <button onClick={handleSaveDisplayName}
@@ -4767,13 +4797,13 @@ export default function ChatPage() {
               </div>
 
               {/* Account */}
-              <button onClick={() => navigate("/account")} className="w-full flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 transition text-left">
-                <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                  <UserCog className="h-4 w-4 text-white/60" />
+              <button onClick={() => navigate("/account")} className={`w-full flex items-center gap-4 p-4 rounded-xl ${bgSecondary} border ${border} ${bgHover} transition text-left`}>
+                <div className={`h-9 w-9 rounded-xl ${bgSecondary} flex items-center justify-center flex-shrink-0`}>
+                  <UserCog className={`h-4 w-4 ${textSecondary}`} />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-sm">Account</p>
-                  <p className="text-xs text-white/50">Profile, password, delete account</p>
+                  <p className={`${textPrimary} font-semibold text-sm`}>About</p>
+                  <p className={`text-xs ${textSecondary}`}>Profile, password, delete account</p>
                 </div>
               </button>
             </div>
